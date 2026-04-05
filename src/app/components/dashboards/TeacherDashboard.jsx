@@ -135,7 +135,7 @@ export function TeacherDashboard() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-lg font-semibold">Assigned Students</CardTitle>
               <div className="flex gap-2">
-                <Select value={activeClassId} onValueChange={setSelectedClassId}>
+                <Select value={activeClassId || ""} onValueChange={setSelectedClassId}>
                   <SelectTrigger className="w-[220px]">
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
