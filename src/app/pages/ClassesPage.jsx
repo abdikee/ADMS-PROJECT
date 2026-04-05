@@ -228,32 +228,24 @@ export function ClassesPage() {
             <DialogDescription>Create a class. Type the academic year, for example `2025-2026`.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <p className="font-semibold">Required fields</p>
-              <p>Class Name: Example `Grade 10 A`</p>
-              <p>Grade: Example `10`</p>
-              <p>Academic Year: Example `2025-2026`</p>
-              <p>Semester: Select `1` or `2`</p>
-              <p>Optional fields: Section, Max Students, Homeroom Teacher</p>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Class Name *</Label>
-                <Input id="name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <Input id="name" placeholder="Grade 10 A" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="grade">Grade *</Label>
-                <Input id="grade" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
+                <Input id="grade" placeholder="10" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="section">Section</Label>
-                <Input id="section" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
+                <Input id="section" placeholder="A" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="maxStudents">Max Students</Label>
-                <Input id="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
+                <Input id="maxStudents" type="number" placeholder="40" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -270,7 +262,7 @@ export function ClassesPage() {
                 <Label>Semester *</Label>
                 <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select semester" />
+                    <SelectValue placeholder="Select semester e.g. 1" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">Semester 1</SelectItem>
@@ -283,7 +275,7 @@ export function ClassesPage() {
               <Label>Homeroom Teacher <span className="text-xs text-gray-400">(optional)</span></Label>
               <Select value={formData.homeroomTeacherId || 'none'} onValueChange={(value) => setFormData({ ...formData, homeroomTeacherId: value === 'none' ? '' : value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select teacher (optional)" />
+                  <SelectValue placeholder="Select teacher if needed" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">No homeroom teacher</SelectItem>
@@ -310,32 +302,24 @@ export function ClassesPage() {
             <DialogDescription>Update class details. Academic year is typed manually.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
-              <p className="font-semibold">Required fields</p>
-              <p>Class Name: Example `Grade 10 A`</p>
-              <p>Grade: Example `10`</p>
-              <p>Academic Year: Example `2025-2026`</p>
-              <p>Semester: Select `1` or `2`</p>
-              <p>Optional fields: Section, Max Students, Homeroom Teacher</p>
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Class Name *</Label>
-                <Input id="edit-name" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+                <Input id="edit-name" placeholder="Grade 10 A" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-grade">Grade *</Label>
-                <Input id="edit-grade" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
+                <Input id="edit-grade" placeholder="10" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-section">Section</Label>
-                <Input id="edit-section" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
+                <Input id="edit-section" placeholder="A" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-maxStudents">Max Students</Label>
-                <Input id="edit-maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
+                <Input id="edit-maxStudents" type="number" placeholder="40" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -352,7 +336,7 @@ export function ClassesPage() {
                 <Label>Semester *</Label>
                 <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select semester" />
+                    <SelectValue placeholder="Select semester e.g. 1" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="1">Semester 1</SelectItem>
@@ -365,7 +349,7 @@ export function ClassesPage() {
               <Label>Homeroom Teacher <span className="text-xs text-gray-400">(optional)</span></Label>
               <Select value={formData.homeroomTeacherId || 'none'} onValueChange={(value) => setFormData({ ...formData, homeroomTeacherId: value === 'none' ? '' : value })}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Select teacher (optional)" />
+                  <SelectValue placeholder="Select teacher if needed" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">No homeroom teacher</SelectItem>

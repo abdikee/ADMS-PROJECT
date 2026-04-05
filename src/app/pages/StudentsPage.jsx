@@ -7,7 +7,6 @@ import { getTeacherAssignedClassIds } from '../utils/teacherAssignments.js';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Label } from '../components/ui/label.jsx';
-import { Textarea } from '../components/ui/textarea.jsx';
 import {
   Dialog,
   DialogContent,
@@ -328,45 +327,24 @@ export function StudentsPage() {
                 <DialogDescription>Enter the student's information below to add them to the system.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student-example">Example Requirements</Label>
-                  <Textarea
-                    id="student-example"
-                    readOnly
-                    value={`Required:
-First Name: Sara
-Last Name: Ali
-Email: student1@marvelschool.edu
-Class: Grade 10 A
-Gender: Female
-Date of Birth: 2010-03-14
-Username: student1
-Password: Student@123
-
-Optional:
-Phone: +251900000002`}
-                    rows={10}
-                    className="resize-none bg-gray-50 text-sm"
-                  />
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name *</Label>
-                    <Input id="firstName" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
+                    <Input id="firstName" placeholder="Sara" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="lastName">Last Name *</Label>
-                    <Input id="lastName" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
+                    <Input id="lastName" placeholder="Ali" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
-                    <Input id="email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                    <Input id="email" type="email" placeholder="student1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
-                    <Input id="phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                    <Input id="phone" placeholder="+251900000002" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -374,7 +352,7 @@ Phone: +251900000002`}
                     <Label htmlFor="classId">Class *</Label>
                     <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
                       <SelectTrigger id="classId">
-                        <SelectValue placeholder="Select class" />
+                        <SelectValue placeholder="Select class e.g. Grade 10 A" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
@@ -411,11 +389,11 @@ Phone: +251900000002`}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">Username *</Label>
-                      <Input id="username" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
+                      <Input id="username" placeholder="student1" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
                     </div>
                     <div className="space-y-2">
                     <Label htmlFor="password">Password *</Label>
-                      <Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                      <Input id="password" type="password" placeholder="Student@123" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                     </div>
                   </div>
                 </div>
@@ -438,43 +416,24 @@ Phone: +251900000002`}
                 <DialogDescription>Update the student's information below.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="edit-student-example">Example Requirements</Label>
-                  <Textarea
-                    id="edit-student-example"
-                    readOnly
-                    value={`Required:
-First Name: Sara
-Last Name: Ali
-Class: Grade 10 A
-
-Recommended:
-Email: student1@marvelschool.edu
-Gender: Female
-Date of Birth: 2010-03-14
-Phone: +251900000002`}
-                    rows={8}
-                    className="resize-none bg-gray-50 text-sm"
-                  />
-                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-firstName">First Name</Label>
-                    <Input id="edit-firstName" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
+                    <Input id="edit-firstName" placeholder="Sara" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-lastName">Last Name</Label>
-                    <Input id="edit-lastName" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
+                    <Input id="edit-lastName" placeholder="Ali" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-email">Email</Label>
-                    <Input id="edit-email" type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                    <Input id="edit-email" type="email" placeholder="student1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-phone">Phone</Label>
-                    <Input id="edit-phone" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                    <Input id="edit-phone" placeholder="+251900000002" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
@@ -482,7 +441,7 @@ Phone: +251900000002`}
                     <Label htmlFor="edit-classId">Class</Label>
                     <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
                       <SelectTrigger id="edit-classId">
-                        <SelectValue placeholder="Select class" />
+                        <SelectValue placeholder="Select class e.g. Grade 10 A" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
