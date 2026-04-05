@@ -50,7 +50,7 @@ export function LoginPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-lg">
             <GraduationCap className="w-10 h-10 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">EduRecord</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Marvel School</h1>
           <p className="text-gray-600">Student Academic Record Management</p>
         </div>
 

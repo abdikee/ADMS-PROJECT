@@ -81,7 +81,7 @@ export function Layout() {
               <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                 <GraduationCap className="w-5 h-5 text-white" />
               </div>
-              <span className="font-semibold text-gray-900">EduRecord</span>
+              <span className="font-semibold text-gray-900">Marvel School</span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -144,10 +144,10 @@ export function Layout() {
             </button>
 
             <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">
-              Student Academic Record Management System
+              Marvel School
             </h1>
             <h1 className="text-lg font-semibold text-gray-900 sm:hidden">
-              EduRecord
+              Marvel School
             </h1>
 
             <DropdownMenu>

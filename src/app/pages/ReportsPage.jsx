@@ -118,7 +118,7 @@ function ReportCard({ report, classInfo, index, totalCards }) {
           <div className="absolute left-0 top-0 h-0 w-0 border-r-[18px] border-t-[18px] border-r-transparent border-t-green-500" />
           <div className="overflow-hidden border border-gray-200">
             <div className="bg-[#5f97cc] px-4 py-4 text-center text-white">
-              <h1 className="text-xl font-bold uppercase">ABC High School Student Report Card</h1>
+              <h1 className="text-xl font-bold uppercase">Marvel School Student Report Card</h1>
               <p className="mt-1 text-lg font-semibold uppercase">Grade: {gradeLabel}</p>
               <p className="mt-1 text-base font-semibold uppercase">Homeroom Teacher: {homeroomTeacher}</p>
               <p className="mt-1 text-base font-semibold uppercase">Academic Year: {academicYearLabel}</p>

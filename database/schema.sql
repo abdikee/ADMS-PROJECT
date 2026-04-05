@@ -28,7 +28,7 @@ CREATE TABLE users (
 CREATE TABLE academic_years (
   id INT PRIMARY KEY AUTO_INCREMENT,
   year VARCHAR(20) NOT NULL,
-  semester ENUM('1', '2', 'Spring', 'Fall') NOT NULL,
+  semester ENUM('1', '2') NOT NULL,
   start_date DATE NOT NULL,
   end_date DATE NOT NULL,
   is_active BOOLEAN DEFAULT FALSE,
@@ -478,7 +478,7 @@ ADD FOREIGN KEY (homeroom_teacher_id) REFERENCES teachers(id) ON DELETE SET NULL
 
 -- Insert default academic year
 INSERT INTO academic_years (year, semester, start_date, end_date, is_active)
-VALUES ('2025-2026', 'Spring', '2025-01-01', '2025-06-30', TRUE);
+VALUES ('2025-2026', '1', '2025-01-01', '2025-06-30', TRUE);
 
 -- Insert default exam types
 INSERT INTO exam_types (name, code, weightage) VALUES
@@ -497,7 +497,7 @@ INSERT INTO departments (name, code, description) VALUES
 
 -- Insert default settings
 INSERT INTO settings (setting_key, setting_value, setting_type, description) VALUES
-('school_name', 'ABC High School', 'text', 'Name of the school'),
+('school_name', 'Marvel School', 'text', 'Name of the school'),
 ('school_address', '123 Education Street', 'text', 'School address'),
 ('school_phone', '+1234567890', 'text', 'School contact number'),
 ('school_email', 'info@abchighschool.edu', 'email', 'School email address'),
