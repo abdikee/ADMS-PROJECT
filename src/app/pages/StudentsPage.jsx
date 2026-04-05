@@ -350,9 +350,9 @@ export function StudentsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="classId">Class *</Label>
-                    <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
+                    <Select value={formData.classId || ""} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
                       <SelectTrigger id="classId">
-                        <SelectValue placeholder="Select class e.g. Grade 10 A" />
+                        <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
@@ -365,9 +365,9 @@ export function StudentsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="gender">Gender *</Label>
-                    <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                    <Select value={formData.gender || ""} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Male">Male</SelectItem>
@@ -439,9 +439,9 @@ export function StudentsPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-classId">Class</Label>
-                    <Select value={formData.classId} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
+                    <Select value={formData.classId || ""} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
                       <SelectTrigger id="edit-classId">
-                        <SelectValue placeholder="Select class e.g. Grade 10 A" />
+                        <SelectValue placeholder="Select class" />
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
@@ -454,9 +454,9 @@ export function StudentsPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="edit-gender">Gender</Label>
-                    <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
+                    <Select value={formData.gender || ""} onValueChange={(value) => setFormData({ ...formData, gender: value })}>
                       <SelectTrigger>
-                        <SelectValue />
+                        <SelectValue placeholder="Select gender" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Male">Male</SelectItem>

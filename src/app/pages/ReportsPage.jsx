@@ -397,7 +397,7 @@ export function ReportsPage() {
           <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
             <div className="space-y-2">
               <Label>Class</Label>
-              <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+              <Select value={selectedClassId || ""} onValueChange={setSelectedClassId}>
                 <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
                 <SelectContent>
                   {availableClasses.map((classItem) => (
@@ -442,7 +442,7 @@ export function ReportsPage() {
           {selectionMode === 'single' && (
             <div className="max-w-md space-y-2">
               <Label>Student</Label>
-              <Select value={selectedStudentId} onValueChange={setSelectedStudentId}>
+              <Select value={selectedStudentId || ""} onValueChange={setSelectedStudentId}>
                 <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                 <SelectContent>
                   {classReports.map((report) => (

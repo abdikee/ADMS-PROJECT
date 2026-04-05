@@ -240,11 +240,12 @@ export function TeachersPage() {
   const renderSubjectSelect = () => (
     <div className="space-y-2">
       <Label>Subject * <span className="text-gray-400 text-xs font-normal">— one subject per teacher</span></Label>
-      <Select value={formData.subjectId} onValueChange={(value) => setFormData({ ...formData, subjectId: value })}>
+      <Select value={formData.subjectId} onValueChange={(value) => setFormData({ ...formData, subjectId: value === '__none__' ? '' : value })}>
         <SelectTrigger>
           <SelectValue placeholder="Select subject" />
         </SelectTrigger>
         <SelectContent className="max-h-48 overflow-y-auto">
+          <SelectItem value="__none__" disabled>— Select a subject —</SelectItem>
           {subjects.map((subject) => (
             <SelectItem key={subject.id} value={subject.id}>
               {subject.name}
@@ -389,9 +390,9 @@ export function TeachersPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="departmentId">Department *</Label>
-                <Select value={formData.departmentId} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
+                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
                   <SelectTrigger id="departmentId">
-                    <SelectValue placeholder="Select department e.g. Mathematics" />
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((department) => (
@@ -485,9 +486,9 @@ export function TeachersPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-departmentId">Department</Label>
-                <Select value={formData.departmentId} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
+                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
                   <SelectTrigger id="edit-departmentId">
-                    <SelectValue placeholder="Select department e.g. Mathematics" />
+                    <SelectValue placeholder="Select department" />
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((department) => (

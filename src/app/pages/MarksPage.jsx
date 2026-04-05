@@ -243,7 +243,7 @@ export function MarksPage() {
           </div>
           <div className="space-y-2">
             <Label>Class</Label>
-            <Select value={selectedClassId} onValueChange={setSelectedClassId}>
+            <Select value={selectedClassId || ""} onValueChange={setSelectedClassId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select class" />
               </SelectTrigger>
@@ -258,7 +258,7 @@ export function MarksPage() {
           </div>
           <div className="space-y-2">
             <Label>Exam Type</Label>
-            <Select value={selectedExamTypeId} onValueChange={setSelectedExamTypeId}>
+            <Select value={selectedExamTypeId || ""} onValueChange={setSelectedExamTypeId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select exam type" />
               </SelectTrigger>
@@ -271,7 +271,7 @@ export function MarksPage() {
           </div>
           <div className="space-y-2">
             <Label>Academic Year</Label>
-            <Select value={selectedAcademicYearId} onValueChange={setSelectedAcademicYearId}>
+            <Select value={selectedAcademicYearId || ""} onValueChange={setSelectedAcademicYearId}>
               <SelectTrigger>
                 <SelectValue placeholder="Select academic year" />
               </SelectTrigger>

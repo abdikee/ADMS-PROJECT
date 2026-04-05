@@ -2,7 +2,29 @@
 -- Update Schema Migration
 -- Run this in Supabase SQL Editor
 -- Safe to run multiple times (idempotent)
+--
+-- Business rules enforced:
+--   • One teacher teaches exactly ONE subject
+--   • One subject CAN be taught by MANY teachers (in different classes)
+--   • Unique constraint on teacher_subjects is (teacher_id, subject_id, class_id, academic_year_id)
+--     which correctly allows multiple teachers to share a subject across classes
 -- ============================================================
+
+-- 0. Drop any incorrect unique constraint that would prevent multiple teachers
+--    from sharing the same subject (e.g. a unique on teacher_id+subject_id alone)
+DROP INDEX IF EXISTS teacher_subjects_teacher_subject_unique;
+ALTER TABLE teacher_subjects
+  DROP CONSTRAINT IF EXISTS teacher_subjects_teacher_subject_key;
+ALTER TABLE teacher_subjects
+  DROP CONSTRAINT IF EXISTS uq_teacher_subject;
+
+-- Ensure the correct composite unique constraint exists
+ALTER TABLE teacher_subjects
+  DROP CONSTRAINT IF EXISTS teacher_subjects_teacher_id_subject_id_class_id_academic_year_id_key;
+
+ALTER TABLE teacher_subjects
+  ADD CONSTRAINT teacher_subjects_teacher_id_subject_id_class_id_academic_year_id_key
+  UNIQUE (teacher_id, subject_id, class_id, academic_year_id);
 
 -- 1. Ensure homeroom_teacher_id is nullable (optional homeroom teacher)
 ALTER TABLE classes
