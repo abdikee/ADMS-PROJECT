@@ -248,10 +248,10 @@ export function ClassesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select academic year" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-48 overflow-y-auto">
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.year} - {year.semester}
+                      {year.year} — Semester {year.semester}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -263,7 +263,7 @@ export function ClassesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select teacher (optional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">— No homeroom teacher —</SelectItem>
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
@@ -314,10 +314,10 @@ export function ClassesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select academic year" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-48 overflow-y-auto">
                   {academicYears.map((year) => (
                     <SelectItem key={year.id} value={year.id}>
-                      {year.year} - {year.semester}
+                      {year.year} — Semester {year.semester}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -329,7 +329,7 @@ export function ClassesPage() {
                 <SelectTrigger>
                   <SelectValue placeholder="Select teacher (optional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">— No homeroom teacher —</SelectItem>
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>

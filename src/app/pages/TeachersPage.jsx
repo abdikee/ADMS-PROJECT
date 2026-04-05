@@ -109,10 +109,6 @@ export function TeachersPage() {
       toast.error('Each teacher must be assigned exactly one subject');
       return false;
     }
-    if (formData.assignedClassIds.length === 0) {
-      toast.error('Assign at least one class to the teacher');
-      return false;
-    }
     if (!isEdit && !formData.username) {
       toast.error('Username is required');
       return false;
@@ -217,9 +213,9 @@ export function TeachersPage() {
 
   const renderClassSelection = () => (
     <div className="space-y-3">
-      <Label>Teaching Classes *</Label>
+      <Label>Teaching Classes</Label>
       <div className="grid gap-3 rounded-lg border border-gray-200 p-4 max-h-56 overflow-y-auto">
-        {classes.map((cls) => {
+        {classes.length > 0 ? classes.map((cls) => {
           const checked = formData.assignedClassIds.includes(cls.id);
           return (
             <label key={cls.id} className="flex items-start gap-3 rounded-md border border-gray-100 px-3 py-2 hover:bg-gray-50">
@@ -232,7 +228,9 @@ export function TeachersPage() {
               </div>
             </label>
           );
-        })}
+        }) : (
+          <p className="text-sm text-gray-500">No classes yet. You can create the teacher now and assign classes later.</p>
+        )}
       </div>
     </div>
   );
@@ -244,7 +242,7 @@ export function TeachersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Teacher Management</h2>
-          <p className="text-gray-600 mt-1">Assign one subject per teacher and as many teaching classes as needed.</p>
+          <p className="text-gray-600 mt-1">Assign one subject per teacher. Teaching classes and homeroom can be added later.</p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -347,7 +345,7 @@ export function TeachersPage() {
         <DialogContent className="sm:max-w-[760px]">
           <DialogHeader>
             <DialogTitle>Add New Teacher</DialogTitle>
-            <DialogDescription>Assign one subject and one or more classes to this teacher.</DialogDescription>
+            <DialogDescription>Create the teacher first. Class and homeroom assignments are optional and can be added later.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">

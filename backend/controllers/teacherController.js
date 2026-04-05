@@ -220,10 +220,6 @@ export const createTeacher = async (req, res) => {
       throw createHttpError('A teacher must be assigned exactly one subject');
     }
 
-    if (assignedClassIds.length === 0) {
-      throw createHttpError('A teacher must be assigned to at least one class');
-    }
-
     if (homeroomClassId && !assignedClassIds.includes(Number(homeroomClassId))) {
       throw createHttpError('Homeroom class must also be one of the assigned teaching classes');
     }
@@ -350,8 +346,8 @@ export const updateTeacher = async (req, res) => {
         ? (updates.homeroomClassId ? Number(updates.homeroomClassId) : null)
         : (existingHomeroom[0]?.id ?? null);
 
-      if (!subjectId || assignedClassIds.length === 0) {
-        throw createHttpError('Teacher assignment requires one subject and at least one class');
+      if (!subjectId) {
+        throw createHttpError('Teacher assignment requires one subject');
       }
 
       if (homeroomClassId && !assignedClassIds.includes(Number(homeroomClassId))) {
