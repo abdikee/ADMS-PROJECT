@@ -247,7 +247,7 @@ export function SubjectsPage() {
       </div>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Add New Subject</DialogTitle>
             <DialogDescription>Enter the subject information below.</DialogDescription>
@@ -265,7 +265,7 @@ export function SubjectsPage() {
               <Label htmlFor="description">Description</Label>
               <Textarea id="description" placeholder="Enter subject description..." value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="maxMarks">Maximum Marks</Label>
                 <Input id="maxMarks" type="number" min="1" value={formData.maxMarks} onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) || 100 })} />
@@ -275,7 +275,7 @@ export function SubjectsPage() {
                 <Input id="passingMarks" type="number" min="0" value={formData.passingMarks} onChange={(e) => setFormData({ ...formData, passingMarks: parseInt(e.target.value) || 40 })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="departmentId">Department</Label>
                 <Select value={formData.departmentId || 'none'} onValueChange={(value) => setFormData({ ...formData, departmentId: value === 'none' ? '' : value })}>
@@ -306,7 +306,7 @@ export function SubjectsPage() {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[500px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Edit Subject</DialogTitle>
             <DialogDescription>Update the subject information below.</DialogDescription>
@@ -324,7 +324,7 @@ export function SubjectsPage() {
               <Label htmlFor="edit-description">Description</Label>
               <Textarea id="edit-description" value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} rows={3} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-maxMarks">Maximum Marks</Label>
                 <Input id="edit-maxMarks" type="number" min="1" value={formData.maxMarks} onChange={(e) => setFormData({ ...formData, maxMarks: parseInt(e.target.value) || 100 })} />
@@ -334,7 +334,7 @@ export function SubjectsPage() {
                 <Input id="edit-passingMarks" type="number" min="0" value={formData.passingMarks} onChange={(e) => setFormData({ ...formData, passingMarks: parseInt(e.target.value) || 40 })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-departmentId">Department</Label>
                 <Select value={formData.departmentId || 'none'} onValueChange={(value) => setFormData({ ...formData, departmentId: value === 'none' ? '' : value })}>

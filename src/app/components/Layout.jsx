@@ -85,7 +85,7 @@ export function Layout() {
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-gray-500 hover:text-gray-700 p-1"
             >
               <X className="w-5 h-5" />
             </button>
@@ -138,17 +138,12 @@ export function Layout() {
           <div className="flex items-center justify-between h-full px-4 sm:px-6 lg:px-8">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden text-gray-500 hover:text-gray-700"
+              className="lg:hidden text-gray-500 hover:text-gray-700 p-1"
             >
               <Menu className="w-6 h-6" />
             </button>
 
-            <h1 className="text-xl font-semibold text-gray-900 hidden sm:block">
-              Marvel School
-            </h1>
-            <h1 className="text-lg font-semibold text-gray-900 sm:hidden">
-              Marvel School
-            </h1>
+            <h1 className="text-base sm:text-xl font-semibold text-gray-900">Marvel School</h1>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -184,7 +179,7 @@ export function Layout() {
         </header>
 
         {/* Page content */}
-        <main className="p-4 sm:p-6 lg:p-8 flex-1 overflow-auto">
+        <main className="p-3 sm:p-6 lg:p-8 flex-1 overflow-auto">
           <Outlet />
         </main>
       </div>

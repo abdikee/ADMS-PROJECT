@@ -123,7 +123,7 @@ function ReportCard({ report, classInfo, index, totalCards }) {
               <p className="mt-1 text-base font-semibold uppercase">Homeroom Teacher: {homeroomTeacher}</p>
               <p className="mt-1 text-base font-semibold uppercase">Academic Year: {academicYearLabel}</p>
             </div>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-[#d6e1f1] text-left text-gray-900">
@@ -394,7 +394,7 @@ export function ReportsPage() {
 
       <Card className="border-gray-200 print:hidden">
         <CardContent className="pt-6 space-y-6">
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,280px)_1fr]">
+          <div className="grid gap-4 grid-cols-1 lg:grid-cols-[minmax(0,280px)_1fr]">
             <div className="space-y-2">
               <Label>Class</Label>
               <Select value={selectedClassId || ""} onValueChange={setSelectedClassId}>
@@ -408,7 +408,7 @@ export function ReportsPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
               <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                 <p className="text-sm text-gray-500">Students in class</p>
                 <p className="text-2xl font-bold text-gray-900">{classReports.length}</p>
@@ -493,7 +493,7 @@ export function ReportsPage() {
       <Card className="border-gray-200 print:hidden">
         <CardHeader><CardTitle className="text-lg font-semibold">Class Snapshot</CardTitle></CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow className="bg-gray-100 hover:bg-gray-100">

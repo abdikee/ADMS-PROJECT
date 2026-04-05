@@ -2,6 +2,34 @@
 @import './tailwind.css';
 @import './theme.css';
 
+/* Mobile: prevent horizontal overflow on the whole page */
+html, body {
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Mobile: make inputs/selects easier to tap */
+@media (max-width: 640px) {
+  input, select, textarea, button {
+    font-size: 16px !important; /* prevents iOS zoom on focus */
+  }
+
+  /* Tighter card padding on mobile */
+  .card-content-mobile {
+    padding: 0.75rem;
+  }
+
+  /* Dialog footer buttons stack nicely */
+  [data-dialog-footer] > button {
+    width: 100%;
+  }
+}
+
+/* Smooth sidebar transition */
+aside {
+  will-change: transform;
+}
+
 /* Print styles for reports */
 @media print {
   @page {

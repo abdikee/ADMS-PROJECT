@@ -240,12 +240,11 @@ export function TeachersPage() {
   const renderSubjectSelect = () => (
     <div className="space-y-2">
       <Label>Subject * <span className="text-gray-400 text-xs font-normal">— one subject per teacher</span></Label>
-      <Select value={formData.subjectId} onValueChange={(value) => setFormData({ ...formData, subjectId: value === '__none__' ? '' : value })}>
+      <Select value={formData.subjectId} onValueChange={(value) => setFormData((prev) => ({ ...prev, subjectId: value === '__none__' ? '' : value }))}>
         <SelectTrigger>
           <SelectValue placeholder="Select subject" />
         </SelectTrigger>
         <SelectContent className="max-h-48 overflow-y-auto">
-          <SelectItem value="__none__" disabled>— Select a subject —</SelectItem>
           {subjects.map((subject) => (
             <SelectItem key={subject.id} value={subject.id}>
               {subject.name}
@@ -288,7 +287,7 @@ export function TeachersPage() {
           <CardTitle className="text-lg font-semibold">All Teachers ({filteredTeachers.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -361,36 +360,36 @@ export function TeachersPage() {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[760px]">
+        <DialogContent className="sm:max-w-[760px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Add New Teacher</DialogTitle>
             <DialogDescription>Create the teacher first. Class and homeroom assignments are optional and can be added later.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
-                <Input id="firstName" placeholder="Abel" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
+                <Input id="firstName" placeholder="Abel" value={formData.firstName} onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">Last Name *</Label>
-                <Input id="lastName" placeholder="Tesfaye" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
+                <Input id="lastName" placeholder="Tesfaye" value={formData.lastName} onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="email">Email *</Label>
-                <Input id="email" type="email" placeholder="teacher1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                <Input id="email" type="email" placeholder="teacher1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone</Label>
-                <Input id="phone" placeholder="+251900000001" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                <Input id="phone" placeholder="+251900000001" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="departmentId">Department *</Label>
-                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
+                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, departmentId: value }))}>
                   <SelectTrigger id="departmentId">
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
@@ -405,12 +404,12 @@ export function TeachersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="qualification">Qualification</Label>
-                <Input id="qualification" placeholder="B.Ed Mathematics" value={formData.qualification} onChange={(e) => setFormData({ ...formData, qualification: e.target.value })} />
+                <Input id="qualification" placeholder="B.Ed Mathematics" value={formData.qualification} onChange={(e) => setFormData((prev) => ({ ...prev, qualification: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="hireDate">Hire Date</Label>
-              <Input id="hireDate" type="date" value={formData.hireDate} onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })} />
+              <Input id="hireDate" type="date" value={formData.hireDate} onChange={(e) => setFormData((prev) => ({ ...prev, hireDate: e.target.value }))} />
             </div>
             {renderSubjectSelect()}
             {renderClassSelection()}
@@ -418,7 +417,7 @@ export function TeachersPage() {
               <Label>Homeroom Class</Label>
               <Select
                 value={formData.homeroomClassId || NO_HOMEROOM_VALUE}
-                onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value })}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="No homeroom class" />
@@ -437,14 +436,14 @@ export function TeachersPage() {
             </div>
             <div className="border-t pt-4 mt-2">
               <h4 className="text-sm font-medium text-gray-700 mb-3">Account Credentials</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="username">Username *</Label>
-                  <Input id="username" placeholder="teacher1" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
+                  <Input id="username" placeholder="teacher1" value={formData.username} onChange={(e) => setFormData((prev) => ({ ...prev, username: e.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="password">Password *</Label>
-                  <Input id="password" type="password" placeholder="Teacher@123" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
+                  <Input id="password" type="password" placeholder="Teacher@123" value={formData.password} onChange={(e) => setFormData((prev) => ({ ...prev, password: e.target.value }))} />
                 </div>
               </div>
             </div>
@@ -457,36 +456,36 @@ export function TeachersPage() {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[760px]">
+        <DialogContent className="sm:max-w-[760px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Edit Teacher</DialogTitle>
             <DialogDescription>Update the teacher details, subject, and teaching classes.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-firstName">First Name</Label>
-                <Input id="edit-firstName" placeholder="Abel" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
+                <Input id="edit-firstName" placeholder="Abel" value={formData.firstName} onChange={(e) => setFormData((prev) => ({ ...prev, firstName: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-lastName">Last Name</Label>
-                <Input id="edit-lastName" placeholder="Tesfaye" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
+                <Input id="edit-lastName" placeholder="Tesfaye" value={formData.lastName} onChange={(e) => setFormData((prev) => ({ ...prev, lastName: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-email">Email</Label>
-                <Input id="edit-email" type="email" placeholder="teacher1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
+                <Input id="edit-email" type="email" placeholder="teacher1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData((prev) => ({ ...prev, email: e.target.value }))} />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-phone">Phone</Label>
-                <Input id="edit-phone" placeholder="+251900000001" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
+                <Input id="edit-phone" placeholder="+251900000001" value={formData.phone} onChange={(e) => setFormData((prev) => ({ ...prev, phone: e.target.value }))} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-departmentId">Department</Label>
-                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData({ ...formData, departmentId: value })}>
+                <Select value={formData.departmentId || ""} onValueChange={(value) => setFormData((prev) => ({ ...prev, departmentId: value }))}>
                   <SelectTrigger id="edit-departmentId">
                     <SelectValue placeholder="Select department" />
                   </SelectTrigger>
@@ -501,12 +500,12 @@ export function TeachersPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-qualification">Qualification</Label>
-                <Input id="edit-qualification" placeholder="B.Ed Mathematics" value={formData.qualification} onChange={(e) => setFormData({ ...formData, qualification: e.target.value })} />
+                <Input id="edit-qualification" placeholder="B.Ed Mathematics" value={formData.qualification} onChange={(e) => setFormData((prev) => ({ ...prev, qualification: e.target.value }))} />
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="edit-hireDate">Hire Date</Label>
-              <Input id="edit-hireDate" type="date" value={formData.hireDate} onChange={(e) => setFormData({ ...formData, hireDate: e.target.value })} />
+              <Input id="edit-hireDate" type="date" value={formData.hireDate} onChange={(e) => setFormData((prev) => ({ ...prev, hireDate: e.target.value }))} />
             </div>
             {renderSubjectSelect()}
             {renderClassSelection()}
@@ -514,7 +513,7 @@ export function TeachersPage() {
               <Label>Homeroom Class</Label>
               <Select
                 value={formData.homeroomClassId || NO_HOMEROOM_VALUE}
-                onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value })}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value }))}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="No homeroom class" />

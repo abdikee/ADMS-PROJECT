@@ -234,7 +234,7 @@ export function MarksPage() {
       </div>
 
       <Card className="border-gray-200">
-        <CardContent className="grid gap-4 pt-6 md:grid-cols-4">
+        <CardContent className="grid gap-4 pt-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
           <div className="space-y-2">
             <Label>Subject</Label>
             <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900">
@@ -292,7 +292,7 @@ export function MarksPage() {
           <CardTitle className="text-lg font-semibold">Class Marks</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>

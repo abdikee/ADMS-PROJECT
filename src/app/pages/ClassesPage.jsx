@@ -163,7 +163,7 @@ export function ClassesPage() {
           <CardTitle className="text-lg font-semibold">All Classes ({classes.length})</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -222,13 +222,13 @@ export function ClassesPage() {
       </Card>
 
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Add Class</DialogTitle>
             <DialogDescription>Create a class. Type the academic year, for example `2025-2026`.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Class Name *</Label>
                 <Input id="name" placeholder="Grade 10 A" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -238,7 +238,7 @@ export function ClassesPage() {
                 <Input id="grade" placeholder="10" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="section">Section</Label>
                 <Input id="section" placeholder="A" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
@@ -248,7 +248,7 @@ export function ClassesPage() {
                 <Input id="maxStudents" type="number" placeholder="40" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="academicYear">Academic Year *</Label>
                 <Input
@@ -296,13 +296,13 @@ export function ClassesPage() {
       </Dialog>
 
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] mx-2 sm:mx-auto">
           <DialogHeader>
             <DialogTitle>Edit Class</DialogTitle>
             <DialogDescription>Update class details. Academic year is typed manually.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Class Name *</Label>
                 <Input id="edit-name" placeholder="Grade 10 A" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
@@ -312,7 +312,7 @@ export function ClassesPage() {
                 <Input id="edit-grade" placeholder="10" value={formData.grade} onChange={(e) => setFormData({ ...formData, grade: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-section">Section</Label>
                 <Input id="edit-section" placeholder="A" value={formData.section} onChange={(e) => setFormData({ ...formData, section: e.target.value })} />
@@ -322,7 +322,7 @@ export function ClassesPage() {
                 <Input id="edit-maxStudents" type="number" placeholder="40" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-academicYear">Academic Year *</Label>
                 <Input

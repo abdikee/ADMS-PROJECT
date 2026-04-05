@@ -242,7 +242,7 @@ export function StudentsPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -321,13 +321,13 @@ export function StudentsPage() {
       {isAdmin && (
         <>
           <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] mx-2 sm:mx-auto">
               <DialogHeader>
                 <DialogTitle>Add New Student</DialogTitle>
                 <DialogDescription>Enter the student's information below to add them to the system.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name *</Label>
                     <Input id="firstName" placeholder="Sara" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
@@ -337,7 +337,7 @@ export function StudentsPage() {
                     <Input id="lastName" placeholder="Ali" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="email">Email *</Label>
                     <Input id="email" type="email" placeholder="student1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
@@ -347,7 +347,7 @@ export function StudentsPage() {
                     <Input id="phone" placeholder="+251900000002" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="classId">Class *</Label>
                     <Select value={formData.classId || ""} onValueChange={(value) => setFormData({ ...formData, classId: value })}>
@@ -386,7 +386,7 @@ export function StudentsPage() {
                 </div>
                 <div className="border-t pt-4 mt-2">
                   <h4 className="text-sm font-medium text-gray-700 mb-3">Account Credentials</h4>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="username">Username *</Label>
                       <Input id="username" placeholder="student1" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
@@ -410,13 +410,13 @@ export function StudentsPage() {
           </Dialog>
 
           <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent className="sm:max-w-[600px]">
+            <DialogContent className="sm:max-w-[600px] mx-2 sm:mx-auto">
               <DialogHeader>
                 <DialogTitle>Edit Student</DialogTitle>
                 <DialogDescription>Update the student's information below.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-firstName">First Name</Label>
                     <Input id="edit-firstName" placeholder="Sara" value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} />
@@ -426,7 +426,7 @@ export function StudentsPage() {
                     <Input id="edit-lastName" placeholder="Ali" value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-email">Email</Label>
                     <Input id="edit-email" type="email" placeholder="student1@marvelschool.edu" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} />
@@ -436,7 +436,7 @@ export function StudentsPage() {
                     <Input id="edit-phone" placeholder="+251900000002" value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-classId">Class</Label>
                     <Select value={formData.classId || ""} onValueChange={(value) => setFormData({ ...formData, classId: value })}>

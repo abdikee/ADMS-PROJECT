@@ -56,17 +56,20 @@ export function DialogTrigger({ asChild, children, onOpenChange }) {
 
 export function DialogContent({ className, children, onOpenChange }) {
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-black/50"
         onClick={() => onOpenChange?.(false)}
       />
-      {/* Panel */}
+      {/* Panel — slides up from bottom on mobile, centered on sm+ */}
       <div
         className={cn(
-          'relative z-50 grid w-full gap-4 rounded-lg border bg-background p-6 shadow-lg',
-          'max-h-[90vh] overflow-y-auto',
+          'relative z-50 grid w-full gap-4 bg-background shadow-lg',
+          'rounded-t-2xl sm:rounded-lg border',
+          'p-4 sm:p-6',
+          'max-h-[92vh] sm:max-h-[90vh] overflow-y-auto',
+          'sm:w-full',
           className
         )}
         onClick={(e) => e.stopPropagation()}
