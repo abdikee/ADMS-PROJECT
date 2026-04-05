@@ -1,0 +1,146 @@
+import pool from '../config/database.js';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const login = async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    // Get user from database
+    const [users] = await pool.query(
+      'SELECT * FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (users.length === 0) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    const user = users[0];
+    const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2');
+    const isValidPassword = isBcryptHash
+      ? await bcrypt.compare(password, user.password)
+      : password === user.password;
+
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    if (!isBcryptHash) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await pool.query(
+        'UPDATE users SET password = ? WHERE id = ?',
+        [hashedPassword, user.id]
+      );
+    }
+
+    // Get additional user info based on role
+    let userData = {
+      id: user.id,
+      username: user.username,
+      role: user.role
+    };
+
+    if (user.role === 'student') {
+      const [students] = await pool.query(
+        'SELECT id, first_name, last_name, email FROM students WHERE user_id = ?',
+        [user.id]
+      );
+      if (students.length > 0) {
+        userData.studentId = students[0].id;
+        userData.name = `${students[0].first_name} ${students[0].last_name}`;
+        userData.email = students[0].email;
+      }
+    } else if (user.role === 'teacher') {
+      const [teachers] = await pool.query(
+        'SELECT id, first_name, last_name, email FROM teachers WHERE user_id = ?',
+        [user.id]
+      );
+      if (teachers.length > 0) {
+        userData.teacherId = teachers[0].id;
+        userData.name = `${teachers[0].first_name} ${teachers[0].last_name}`;
+        userData.email = teachers[0].email;
+      }
+    } else {
+      userData.name = 'Administrator';
+      userData.email = 'admin@edurecord.com';
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        id: user.id, 
+        username: user.username, 
+        role: user.role,
+        ...userData
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login = NOW() WHERE id = ?',
+      [user.id]
+    );
+
+    res.json({
+      token,
+      user: userData
+    });
+
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Login failed' });
+  }
+};
+
+export const register = async (req, res) => {
+  try {
+    const { username, password, role, firstName, lastName, email } = req.body;
+
+    // Check if user exists
+    const [existing] = await pool.query(
+      'SELECT id FROM users WHERE username = ?',
+      [username]
+    );
+
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already exists' });
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create user
+    const [result] = await pool.query(
+      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      [username, hashedPassword, role]
+    );
+
+    const userId = result.insertId;
+
+    // Create profile based on role
+    if (role === 'student' && firstName && lastName) {
+      await pool.query(
+        'INSERT INTO students (user_id, first_name, last_name, email) VALUES (?, ?, ?, ?)',
+        [userId, firstName, lastName, email]
+      );
+    } else if (role === 'teacher' && firstName && lastName) {
+      await pool.query(
+        'INSERT INTO teachers (user_id, first_name, last_name, email) VALUES (?, ?, ?, ?)',
+        [userId, firstName, lastName, email]
+      );
+    }
+
+    res.status(201).json({ message: 'User created successfully' });
+
+  } catch (error) {
+    console.error('Registration error:', error);
+    res.status(500).json({ error: 'Registration failed' });
+  }
+};
