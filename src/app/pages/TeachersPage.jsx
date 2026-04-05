@@ -6,6 +6,7 @@ import { Navigate } from 'react-router';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Label } from '../components/ui/label.jsx';
+import { Textarea } from '../components/ui/textarea.jsx';
 import { Checkbox } from '../components/ui/checkbox.jsx';
 import {
   Dialog,
@@ -348,6 +349,30 @@ export function TeachersPage() {
             <DialogDescription>Create the teacher first. Class and homeroom assignments are optional and can be added later.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="teacher-example">Example Requirements</Label>
+              <Textarea
+                id="teacher-example"
+                readOnly
+                value={`Required:
+First Name: Abel
+Last Name: Tesfaye
+Email: teacher1@marvelschool.edu
+Department: Mathematics
+Subject: Mathematics
+Username: teacher1
+Password: Teacher@123
+
+Optional:
+Phone: +251900000001
+Qualification: B.Ed Mathematics
+Hire Date: 2025-01-15
+Teaching Classes: can be assigned later
+Homeroom Class: can be assigned later`}
+                rows={11}
+                className="resize-none bg-gray-50 text-sm"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="firstName">First Name *</Label>
@@ -456,6 +481,28 @@ export function TeachersPage() {
             <DialogDescription>Update the teacher details, subject, and teaching classes.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-teacher-example">Example Requirements</Label>
+              <Textarea
+                id="edit-teacher-example"
+                readOnly
+                value={`Required:
+First Name: Abel
+Last Name: Tesfaye
+Email: teacher1@marvelschool.edu
+Department: Mathematics
+Subject: Mathematics
+
+Optional:
+Phone: +251900000001
+Qualification: B.Ed Mathematics
+Hire Date: 2025-01-15
+Teaching Classes: Grade 10 A
+Homeroom Class: Grade 10 A`}
+                rows={10}
+                className="resize-none bg-gray-50 text-sm"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-firstName">First Name</Label>

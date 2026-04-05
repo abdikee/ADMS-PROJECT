@@ -7,6 +7,7 @@ import { getTeacherAssignedClassIds } from '../utils/teacherAssignments.js';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Label } from '../components/ui/label.jsx';
+import { Textarea } from '../components/ui/textarea.jsx';
 import {
   Dialog,
   DialogContent,
@@ -327,6 +328,27 @@ export function StudentsPage() {
                 <DialogDescription>Enter the student's information below to add them to the system.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="student-example">Example Requirements</Label>
+                  <Textarea
+                    id="student-example"
+                    readOnly
+                    value={`Required:
+First Name: Sara
+Last Name: Ali
+Email: student1@marvelschool.edu
+Class: Grade 10 A
+Gender: Female
+Date of Birth: 2010-03-14
+Username: student1
+Password: Student@123
+
+Optional:
+Phone: +251900000002`}
+                    rows={10}
+                    className="resize-none bg-gray-50 text-sm"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="firstName">First Name *</Label>
@@ -416,6 +438,25 @@ export function StudentsPage() {
                 <DialogDescription>Update the student's information below.</DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <div className="space-y-2">
+                  <Label htmlFor="edit-student-example">Example Requirements</Label>
+                  <Textarea
+                    id="edit-student-example"
+                    readOnly
+                    value={`Required:
+First Name: Sara
+Last Name: Ali
+Class: Grade 10 A
+
+Recommended:
+Email: student1@marvelschool.edu
+Gender: Female
+Date of Birth: 2010-03-14
+Phone: +251900000002`}
+                    rows={8}
+                    className="resize-none bg-gray-50 text-sm"
+                  />
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="edit-firstName">First Name</Label>
