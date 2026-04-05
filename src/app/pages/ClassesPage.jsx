@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, UserX } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useData } from '../contexts/DataContext.jsx';
 import { Navigate } from 'react-router';
@@ -147,7 +147,7 @@ export function ClassesPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Class Management</h2>
-          <p className="text-gray-600 mt-1">Create classes and assign homeroom teachers.</p>
+          <p className="text-gray-600 mt-1">Create classes. Homeroom teacher assignment is optional.</p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="w-4 h-4 mr-2" />
@@ -179,7 +179,11 @@ export function ClassesPage() {
                       <TableCell className="font-medium">{classItem.name}</TableCell>
                       <TableCell>{classItem.grade}{classItem.section ? ` (${classItem.section})` : ''}</TableCell>
                       <TableCell>{classItem.academicYear} {classItem.semester ? `- ${classItem.semester}` : ''}</TableCell>
-                      <TableCell>{classItem.homeroomTeacherName || '-'}</TableCell>
+                      <TableCell>
+                        {classItem.homeroomTeacherName
+                          ? classItem.homeroomTeacherName
+                          : <span className="inline-flex items-center gap-1 text-xs text-gray-400"><UserX className="w-3 h-3" />Unassigned</span>}
+                      </TableCell>
                       <TableCell>{classItem.studentCount || 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
@@ -215,7 +219,7 @@ export function ClassesPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add Class</DialogTitle>
-            <DialogDescription>Create a class and assign a homeroom teacher.</DialogDescription>
+            <DialogDescription>Create a class. Homeroom teacher is optional and can be assigned later.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
@@ -281,7 +285,7 @@ export function ClassesPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Class</DialogTitle>
-            <DialogDescription>Update class details and homeroom assignment.</DialogDescription>
+            <DialogDescription>Update class details. Homeroom teacher assignment is optional.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-2 gap-4">
