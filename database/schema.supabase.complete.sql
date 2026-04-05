@@ -270,10 +270,9 @@ SELECT
   '10',
   'A',
   ay.id,
-  t.id,
+  NULL,
   40
 FROM academic_years ay
-JOIN teachers t ON t.user_id = (SELECT id FROM users WHERE username = 'teacher1')
 WHERE ay.year = '2025-2026'
   AND ay.semester = '1'
   AND NOT EXISTS (

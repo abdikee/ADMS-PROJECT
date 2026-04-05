@@ -1,5 +1,83 @@
 import pool from '../config/database.js';
 
+function normalizeSemester(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const normalized = String(value).trim();
+  if (normalized === '1' || normalized === 'Spring') return '1';
+  if (normalized === '2' || normalized === 'Fall') return '2';
+  return null;
+}
+
+function buildAcademicYearDates(year, semester) {
+  const match = String(year).trim().match(/^(\d{4})(?:\s*-\s*(\d{4}))?$/);
+  if (!match) {
+    throw new Error('Academic year must be in YYYY-YYYY format');
+  }
+
+  const startYear = Number(match[1]);
+  const endYear = match[2] ? Number(match[2]) : startYear + 1;
+  if (endYear !== startYear + 1) {
+    throw new Error('Academic year must span consecutive years, for example 2025-2026');
+  }
+
+  if (semester === '1') {
+    return {
+      startDate: `${startYear}-01-01`,
+      endDate: `${startYear}-06-30`,
+    };
+  }
+
+  return {
+    startDate: `${startYear}-07-01`,
+    endDate: `${startYear}-12-31`,
+  };
+}
+
+async function resolveAcademicYearId(connection, payload) {
+  const rawAcademicYearId = payload.academicYearId;
+  if (rawAcademicYearId !== undefined && rawAcademicYearId !== null && rawAcademicYearId !== '') {
+    const academicYearId = Number(rawAcademicYearId);
+    const [existingAcademicYears] = await connection.query(
+      'SELECT id FROM academic_years WHERE id = ? LIMIT 1',
+      [academicYearId]
+    );
+
+    if (existingAcademicYears.length === 0) {
+      throw new Error('Selected academic year was not found');
+    }
+
+    return academicYearId;
+  }
+
+  const academicYear = String(payload.academicYear || '').trim();
+  const semester = normalizeSemester(payload.semester);
+
+  if (!academicYear || !semester) {
+    throw new Error('Academic year and semester are required');
+  }
+
+  const [existingAcademicYears] = await connection.query(
+    'SELECT id FROM academic_years WHERE year = ? AND semester = ? LIMIT 1',
+    [academicYear, semester]
+  );
+
+  if (existingAcademicYears.length > 0) {
+    return existingAcademicYears[0].id;
+  }
+
+  const { startDate, endDate } = buildAcademicYearDates(academicYear, semester);
+  const [insertResult] = await connection.query(
+    `INSERT INTO academic_years (year, semester, start_date, end_date, is_active)
+     VALUES (?, ?, ?, ?, FALSE)`,
+    [academicYear, semester, startDate, endDate]
+  );
+
+  return insertResult.insertId;
+}
+
 function buildClassAccessFilters(req, classAlias = 'c') {
   const filters = [];
   const params = [];
@@ -94,17 +172,20 @@ export const getClassById = async (req, res) => {
 };
 
 export const createClass = async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
     const {
       name,
       grade,
       section,
-      academicYearId,
       homeroomTeacherId,
       maxStudents
     } = req.body;
 
-    const [result] = await pool.query(
+    const academicYearId = await resolveAcademicYearId(connection, req.body);
+
+    const [result] = await connection.query(
       `INSERT INTO classes
        (name, grade, section, academic_year_id, homeroom_teacher_id, max_students)
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -117,11 +198,15 @@ export const createClass = async (req, res) => {
     });
   } catch (error) {
     console.error('Error creating class:', error);
-    res.status(500).json({ error: 'Failed to create class' });
+    res.status(400).json({ error: error.message || 'Failed to create class' });
+  } finally {
+    connection.release();
   }
 };
 
 export const updateClass = async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
     const { id } = req.params;
     const updates = req.body;
@@ -129,7 +214,6 @@ export const updateClass = async (req, res) => {
       name: 'name',
       grade: 'grade',
       section: 'section',
-      academicYearId: 'academic_year_id',
       homeroomTeacherId: 'homeroom_teacher_id',
       maxStudents: 'max_students',
     };
@@ -144,13 +228,23 @@ export const updateClass = async (req, res) => {
       }
     });
 
+    if (
+      updates.academicYearId !== undefined ||
+      updates.academicYear !== undefined ||
+      updates.semester !== undefined
+    ) {
+      const academicYearId = await resolveAcademicYearId(connection, updates);
+      fields.push('academic_year_id = ?');
+      values.push(academicYearId);
+    }
+
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
     values.push(id);
 
-    await pool.query(
+    await connection.query(
       `UPDATE classes SET ${fields.join(', ')} WHERE id = ?`,
       values
     );
@@ -158,7 +252,9 @@ export const updateClass = async (req, res) => {
     res.json({ message: 'Class updated successfully' });
   } catch (error) {
     console.error('Error updating class:', error);
-    res.status(500).json({ error: 'Failed to update class' });
+    res.status(400).json({ error: error.message || 'Failed to update class' });
+  } finally {
+    connection.release();
   }
 };
 

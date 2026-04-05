@@ -69,7 +69,8 @@ INSERT INTO academic_years (year, semester, start_date, end_date, is_active)
 VALUES ('2025-2026', '1', '2025-01-01', '2025-06-30', TRUE)
 ON CONFLICT (year, semester) DO NOTHING;
 
--- 11. Seed one teacher user and one student user for initial access
+-- 11. Seed one teacher user, one class, and one student for initial access
+--     without requiring a homeroom teacher assignment up front
 INSERT INTO users (username, password, role, is_active) VALUES
   ('teacher1', '$2b$10$N2t83pbWKN4yH9TvgLkDmeahw/fOrFDhNGlvRF94eArUVaq4pEz6G', 'teacher', TRUE),
   ('student1', '$2b$10$yWuQMaq/cPTYC4S7v70O4uy8uT0K2qFmTzHUh9ZQFQ12F1K0Zo7O.', 'student', TRUE)
@@ -136,10 +137,9 @@ SELECT
   '10',
   'A',
   ay.id,
-  t.id,
+  NULL,
   40
 FROM academic_years ay
-JOIN teachers t ON t.user_id = (SELECT id FROM users WHERE username = 'teacher1')
 WHERE ay.year = '2025-2026'
   AND ay.semester = '1'
   AND NOT EXISTS (

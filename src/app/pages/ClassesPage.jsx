@@ -46,14 +46,15 @@ const initialFormData = {
   name: '',
   grade: '',
   section: '',
-  academicYearId: '',
+  academicYear: '',
+  semester: '1',
   homeroomTeacherId: '',
   maxStudents: '40',
 };
 
 export function ClassesPage() {
   const { user } = useAuth();
-  const { classes, teachers, academicYears, addClass, updateClass, deleteClass } = useData();
+  const { classes, teachers, addClass, updateClass, deleteClass } = useData();
 
   if (user?.role !== 'Admin') {
     return <Navigate to="/" replace />;
@@ -68,24 +69,32 @@ export function ClassesPage() {
   const resetForm = () => setFormData(initialFormData);
 
   const validateForm = () => {
-    if (!formData.name || !formData.grade || !formData.academicYearId) {
-      toast.error('Class name, grade, and academic year are required');
+    if (!formData.name || !formData.grade || !formData.academicYear || !formData.semester) {
+      toast.error('Class name, grade, academic year, and semester are required');
       return false;
     }
+
     return true;
   };
+
+  const buildClassPayload = () => ({
+    name: formData.name,
+    grade: formData.grade,
+    section: formData.section,
+    academicYear: formData.academicYear.trim(),
+    semester: formData.semester,
+    homeroomTeacherId: formData.homeroomTeacherId || null,
+    maxStudents: parseInt(formData.maxStudents, 10) || 40,
+  });
 
   const handleAdd = async () => {
     if (!validateForm()) return;
 
     try {
+      const payload = buildClassPayload();
       await addClass({
-        name: formData.name,
-        grade: formData.grade,
-        section: formData.section,
-        academicYearId: formData.academicYearId,
-        homeroomTeacherId: formData.homeroomTeacherId || undefined,
-        maxStudents: parseInt(formData.maxStudents, 10) || 40,
+        ...payload,
+        homeroomTeacherId: payload.homeroomTeacherId || undefined,
       });
       toast.success('Class created successfully');
       setIsAddDialogOpen(false);
@@ -101,7 +110,8 @@ export function ClassesPage() {
       name: classItem.name,
       grade: classItem.grade,
       section: classItem.section || '',
-      academicYearId: classItem.academicYearId || '',
+      academicYear: classItem.academicYear || '',
+      semester: classItem.semester || '1',
       homeroomTeacherId: classItem.homeroomTeacherId || '',
       maxStudents: String(classItem.maxStudents || 40),
     });
@@ -112,14 +122,7 @@ export function ClassesPage() {
     if (!selectedClass || !validateForm()) return;
 
     try {
-      await updateClass(selectedClass.id, {
-        name: formData.name,
-        grade: formData.grade,
-        section: formData.section,
-        academicYearId: formData.academicYearId,
-        homeroomTeacherId: formData.homeroomTeacherId || null,
-        maxStudents: parseInt(formData.maxStudents, 10) || 40,
-      });
+      await updateClass(selectedClass.id, buildClassPayload());
       toast.success('Class updated successfully');
       setIsEditDialogOpen(false);
       resetForm();
@@ -144,13 +147,13 @@ export function ClassesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Class Management</h2>
-          <p className="text-gray-600 mt-1">Create classes. Homeroom teacher assignment is optional.</p>
+          <p className="mt-1 text-gray-600">Create classes. Academic year is typed manually and homeroom teacher is optional.</p>
         </div>
         <Button onClick={() => setIsAddDialogOpen(true)} className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="w-4 h-4 mr-2" />
+          <Plus className="mr-2 h-4 w-4" />
           Add Class
         </Button>
       </div>
@@ -182,21 +185,24 @@ export function ClassesPage() {
                       <TableCell>
                         {classItem.homeroomTeacherName
                           ? classItem.homeroomTeacherName
-                          : <span className="inline-flex items-center gap-1 text-xs text-gray-400"><UserX className="w-3 h-3" />Unassigned</span>}
+                          : <span className="inline-flex items-center gap-1 text-xs text-gray-400"><UserX className="h-3 w-3" />Unassigned</span>}
                       </TableCell>
                       <TableCell>{classItem.studentCount || 0}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button variant="ghost" size="icon" onClick={() => handleEdit(classItem)} className="hover:bg-blue-50 hover:text-blue-600">
-                            <Pencil className="w-4 h-4" />
+                            <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => { setSelectedClass(classItem); setDeleteDialogOpen(true); }}
+                            onClick={() => {
+                              setSelectedClass(classItem);
+                              setDeleteDialogOpen(true);
+                            }}
                             className="hover:bg-red-50 hover:text-red-600"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </TableCell>
@@ -204,7 +210,7 @@ export function ClassesPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={6} className="py-8 text-center text-gray-500">
                       No classes created yet
                     </TableCell>
                   </TableRow>
@@ -219,9 +225,17 @@ export function ClassesPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Add Class</DialogTitle>
-            <DialogDescription>Create a class. Homeroom teacher is optional and can be assigned later.</DialogDescription>
+            <DialogDescription>Create a class. Type the academic year, for example `2025-2026`.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <p className="font-semibold">Required fields</p>
+              <p>Class Name: Example `Grade 10 A`</p>
+              <p>Grade: Example `10`</p>
+              <p>Academic Year: Example `2025-2026`</p>
+              <p>Semester: Select `1` or `2`</p>
+              <p>Optional fields: Section, Max Students, Homeroom Teacher</p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Class Name *</Label>
@@ -242,29 +256,37 @@ export function ClassesPage() {
                 <Input id="maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Academic Year *</Label>
-              <Select value={formData.academicYearId} onValueChange={(value) => setFormData({ ...formData, academicYearId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select academic year" />
-                </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto">
-                  {academicYears.map((year) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.year} — Semester {year.semester}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="academicYear">Academic Year *</Label>
+                <Input
+                  id="academicYear"
+                  placeholder="2025-2026"
+                  value={formData.academicYear}
+                  onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Semester *</Label>
+                <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Semester 1</SelectItem>
+                    <SelectItem value="2">Semester 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Homeroom Teacher <span className="text-gray-400 text-xs">(optional)</span></Label>
+              <Label>Homeroom Teacher <span className="text-xs text-gray-400">(optional)</span></Label>
               <Select value={formData.homeroomTeacherId || 'none'} onValueChange={(value) => setFormData({ ...formData, homeroomTeacherId: value === 'none' ? '' : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select teacher (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48 overflow-y-auto">
-                  <SelectItem value="none">— No homeroom teacher —</SelectItem>
+                  <SelectItem value="none">No homeroom teacher</SelectItem>
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.firstName} {teacher.lastName}
@@ -285,9 +307,17 @@ export function ClassesPage() {
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Edit Class</DialogTitle>
-            <DialogDescription>Update class details. Homeroom teacher assignment is optional.</DialogDescription>
+            <DialogDescription>Update class details. Academic year is typed manually.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+              <p className="font-semibold">Required fields</p>
+              <p>Class Name: Example `Grade 10 A`</p>
+              <p>Grade: Example `10`</p>
+              <p>Academic Year: Example `2025-2026`</p>
+              <p>Semester: Select `1` or `2`</p>
+              <p>Optional fields: Section, Max Students, Homeroom Teacher</p>
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Class Name *</Label>
@@ -308,29 +338,37 @@ export function ClassesPage() {
                 <Input id="edit-maxStudents" type="number" value={formData.maxStudents} onChange={(e) => setFormData({ ...formData, maxStudents: e.target.value })} />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Academic Year *</Label>
-              <Select value={formData.academicYearId} onValueChange={(value) => setFormData({ ...formData, academicYearId: value })}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select academic year" />
-                </SelectTrigger>
-                <SelectContent className="max-h-48 overflow-y-auto">
-                  {academicYears.map((year) => (
-                    <SelectItem key={year.id} value={year.id}>
-                      {year.year} — Semester {year.semester}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-academicYear">Academic Year *</Label>
+                <Input
+                  id="edit-academicYear"
+                  placeholder="2025-2026"
+                  value={formData.academicYear}
+                  onChange={(e) => setFormData({ ...formData, academicYear: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Semester *</Label>
+                <Select value={formData.semester} onValueChange={(value) => setFormData({ ...formData, semester: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select semester" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Semester 1</SelectItem>
+                    <SelectItem value="2">Semester 2</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Homeroom Teacher <span className="text-gray-400 text-xs">(optional)</span></Label>
+              <Label>Homeroom Teacher <span className="text-xs text-gray-400">(optional)</span></Label>
               <Select value={formData.homeroomTeacherId || 'none'} onValueChange={(value) => setFormData({ ...formData, homeroomTeacherId: value === 'none' ? '' : value })}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select teacher (optional)" />
                 </SelectTrigger>
                 <SelectContent className="max-h-48 overflow-y-auto">
-                  <SelectItem value="none">— No homeroom teacher —</SelectItem>
+                  <SelectItem value="none">No homeroom teacher</SelectItem>
                   {teachers.map((teacher) => (
                     <SelectItem key={teacher.id} value={teacher.id}>
                       {teacher.firstName} {teacher.lastName}
