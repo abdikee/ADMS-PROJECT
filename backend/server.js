@@ -8,9 +8,22 @@ import { env } from './config/env.js';
 const app = express();
 const PORT = Number(env.PORT);
 const server = http.createServer(app);
+const allowedOrigins = new Set(env.CORS_ORIGIN);
 
 app.use(cors({
-  origin: env.CORS_ORIGIN,
+  origin(origin, callback) {
+    if (!origin) {
+      callback(null, true);
+      return;
+    }
+
+    if (allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS origin not allowed: ${origin}`));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -74,6 +87,7 @@ server.listen(PORT, () => {
   console.log(`Environment: ${env.NODE_ENV}`);
   console.log(`API URL: http://localhost:${PORT}/api`);
   console.log(`Realtime URL: http://localhost:${PORT}/api/realtime/stream`);
+  console.log(`Allowed CORS origins: ${env.CORS_ORIGIN.join(', ')}`);
   console.log('========================================');
 });
 
