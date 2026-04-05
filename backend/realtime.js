@@ -37,10 +37,33 @@ export function registerRealtimeClient(res, user) {
   };
 }
 
+// Map API paths to entity names for selective frontend refresh
+const PATH_TO_ENTITY = {
+  '/api/students': 'students',
+  '/api/teachers': 'teachers',
+  '/api/subjects': 'subjects',
+  '/api/classes': 'classes',
+  '/api/marks': 'marks',
+  '/api/departments': 'departments',
+  '/api/exam-types': 'examTypes',
+  '/api/academic-years': 'academicYears',
+  '/api/course-registrations': 'courseRegistrations',
+  '/api/profile': 'profile',
+};
+
+function resolveEntity(path = '') {
+  for (const [prefix, entity] of Object.entries(PATH_TO_ENTITY)) {
+    if (path.startsWith(prefix)) return entity;
+  }
+  return null;
+}
+
 export function broadcastRealtimeUpdate(payload = {}) {
+  const entity = resolveEntity(payload.path);
   const event = {
     type: 'data-changed',
     ts: Date.now(),
+    entity,
     ...payload,
   };
 

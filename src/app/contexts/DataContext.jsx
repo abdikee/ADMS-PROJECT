@@ -5,7 +5,6 @@ import { API_URL } from '../services/config.js';
 const DataContext = createContext(undefined);
 const DATA_SYNC_KEY = 'sams_data_sync';
 const DATA_SYNC_CHANNEL = 'sams_data_channel';
-const REALTIME_REFRESH_INTERVAL_MS = 2000;
 const hasRealCredentials = (username) => Boolean(username && !username.startsWith('temp_'));
 
 const normalizeStudent = (student) => {
@@ -141,17 +140,10 @@ const normalizeClass = (classItem) => ({
 const getCollectionFromResult = (result, keys, label, failures) => {
   if (result.status === 'fulfilled') {
     const value = result.value;
-
-    if (Array.isArray(value)) {
-      return value;
-    }
-
+    if (Array.isArray(value)) return value;
     for (const key of keys) {
-      if (Array.isArray(value?.[key])) {
-        return value[key];
-      }
+      if (Array.isArray(value?.[key])) return value[key];
     }
-
     return [];
   }
 
@@ -159,9 +151,20 @@ const getCollectionFromResult = (result, keys, label, failures) => {
     ? ` (${result.reason.status})`
     : '';
   const message = result.reason?.message ? `: ${result.reason.message}` : '';
-
   failures.push(`${label}${status}${message}`);
   return [];
+};
+
+// Map SSE entity names to fetch functions and setters
+const ENTITY_FETCHERS = {
+  students: { fetch: () => api.getStudents(), keys: ['students', 'data'], normalize: normalizeStudent },
+  teachers: { fetch: () => api.getTeachers(), keys: ['teachers', 'data'], normalize: normalizeTeacher },
+  subjects: { fetch: () => api.getSubjects(), keys: ['subjects', 'data'], normalize: normalizeSubject },
+  departments: { fetch: () => api.getDepartments(), keys: ['departments', 'data'], normalize: normalizeDepartment },
+  marks: { fetch: () => api.getMarks(), keys: ['marks', 'data'], normalize: normalizeMark },
+  classes: { fetch: () => api.getClasses(), keys: ['classes', 'data'], normalize: normalizeClass },
+  examTypes: { fetch: () => api.getExamTypes(), keys: ['examTypes', 'data'], normalize: normalizeExamType },
+  academicYears: { fetch: () => api.getAcademicYears(), keys: ['academicYears', 'data'], normalize: normalizeAcademicYear },
 };
 
 export function DataProvider({ children }) {
@@ -178,6 +181,37 @@ export function DataProvider({ children }) {
   const fetchInFlightRef = useRef(null);
   const broadcastChannelRef = useRef(null);
   const eventSourceRef = useRef(null);
+
+  const setters = useRef({
+    students: setStudents,
+    teachers: setTeachers,
+    subjects: setSubjects,
+    departments: setDepartments,
+    marks: setMarks,
+    classes: setClasses,
+    examTypes: setExamTypes,
+    academicYears: setAcademicYears,
+  });
+
+  // Refresh only the affected entity collection
+  const refreshEntity = useCallback(async (entity) => {
+    const config = ENTITY_FETCHERS[entity];
+    const setter = setters.current[entity];
+    if (!config || !setter) return;
+
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      const result = await config.fetch();
+      const raw = Array.isArray(result)
+        ? result
+        : config.keys.reduce((acc, key) => acc || result?.[key], null) || [];
+      setter(raw.map(config.normalize));
+    } catch (err) {
+      console.error(`Failed to refresh ${entity}:`, err);
+    }
+  }, []);
 
   const fetchAllData = useCallback(async ({ silent = false, force = false } = {}) => {
     if (fetchInFlightRef.current && !force) {
@@ -200,9 +234,7 @@ export function DataProvider({ children }) {
         return;
       }
 
-      if (!silent) {
-        setLoading(true);
-      }
+      if (!silent) setLoading(true);
       setError(null);
 
       try {
@@ -218,34 +250,19 @@ export function DataProvider({ children }) {
         ]);
 
         const [
-          studentsResult,
-          teachersResult,
-          subjectsResult,
-          departmentsResult,
-          marksResult,
-          classesResult,
-          examTypesResult,
-          academicYearsResult,
+          studentsResult, teachersResult, subjectsResult, departmentsResult,
+          marksResult, classesResult, examTypesResult, academicYearsResult,
         ] = results;
 
         const failures = [];
-        const studentsRaw = getCollectionFromResult(studentsResult, ['students', 'data'], 'students', failures);
-        const teachersRaw = getCollectionFromResult(teachersResult, ['teachers', 'data'], 'teachers', failures);
-        const subjectsRaw = getCollectionFromResult(subjectsResult, ['subjects', 'data'], 'subjects', failures);
-        const departmentsRaw = getCollectionFromResult(departmentsResult, ['departments', 'data'], 'departments', failures);
-        const marksRaw = getCollectionFromResult(marksResult, ['marks', 'data'], 'marks', failures);
-        const classesRaw = getCollectionFromResult(classesResult, ['classes', 'data'], 'classes', failures);
-        const examTypesRaw = getCollectionFromResult(examTypesResult, ['examTypes', 'data'], 'exam types', failures);
-        const academicYearsRaw = getCollectionFromResult(academicYearsResult, ['academicYears', 'data'], 'academic years', failures);
-
-        setStudents(studentsRaw.map(normalizeStudent));
-        setTeachers(teachersRaw.map(normalizeTeacher));
-        setSubjects(subjectsRaw.map(normalizeSubject));
-        setDepartments(departmentsRaw.map(normalizeDepartment));
-        setMarks(marksRaw.map(normalizeMark));
-        setClasses(classesRaw.map(normalizeClass));
-        setExamTypes(examTypesRaw.map(normalizeExamType));
-        setAcademicYears(academicYearsRaw.map(normalizeAcademicYear));
+        setStudents(getCollectionFromResult(studentsResult, ['students', 'data'], 'students', failures).map(normalizeStudent));
+        setTeachers(getCollectionFromResult(teachersResult, ['teachers', 'data'], 'teachers', failures).map(normalizeTeacher));
+        setSubjects(getCollectionFromResult(subjectsResult, ['subjects', 'data'], 'subjects', failures).map(normalizeSubject));
+        setDepartments(getCollectionFromResult(departmentsResult, ['departments', 'data'], 'departments', failures).map(normalizeDepartment));
+        setMarks(getCollectionFromResult(marksResult, ['marks', 'data'], 'marks', failures).map(normalizeMark));
+        setClasses(getCollectionFromResult(classesResult, ['classes', 'data'], 'classes', failures).map(normalizeClass));
+        setExamTypes(getCollectionFromResult(examTypesResult, ['examTypes', 'data'], 'exam types', failures).map(normalizeExamType));
+        setAcademicYears(getCollectionFromResult(academicYearsResult, ['academicYears', 'data'], 'academic years', failures).map(normalizeAcademicYear));
 
         if (failures.length === 0) {
           setError(null);
@@ -258,9 +275,7 @@ export function DataProvider({ children }) {
         console.error('Failed to fetch data:', err);
         setError(err.message || 'Failed to fetch data');
       } finally {
-        if (!silent) {
-          setLoading(false);
-        }
+        if (!silent) setLoading(false);
       }
     };
 
@@ -284,16 +299,15 @@ export function DataProvider({ children }) {
     await fetchAllData({ silent: true });
   }, [fetchAllData]);
 
-  const notifyDataChanged = useCallback(() => {
-    const payload = JSON.stringify({ ts: Date.now() });
+  const notifyDataChanged = useCallback((entity) => {
+    const payload = JSON.stringify({ ts: Date.now(), entity: entity || null });
     localStorage.setItem(DATA_SYNC_KEY, payload);
     broadcastChannelRef.current?.postMessage(payload);
   }, []);
 
+  // Cross-tab sync + visibility/focus/online handlers
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
+    if (typeof window === 'undefined') return undefined;
 
     if ('BroadcastChannel' in window) {
       broadcastChannelRef.current = new BroadcastChannel(DATA_SYNC_CHANNEL);
@@ -301,27 +315,38 @@ export function DataProvider({ children }) {
 
     const handleStorage = (event) => {
       if (event.key === DATA_SYNC_KEY && event.newValue) {
+        try {
+          const { entity } = JSON.parse(event.newValue);
+          if (entity && ENTITY_FETCHERS[entity]) {
+            void refreshEntity(entity);
+          } else {
+            void refreshDataSilently();
+          }
+        } catch {
+          void refreshDataSilently();
+        }
+      }
+    };
+
+    const handleBroadcastMessage = (event) => {
+      try {
+        const { entity } = JSON.parse(event.data);
+        if (entity && ENTITY_FETCHERS[entity]) {
+          void refreshEntity(entity);
+        } else {
+          void refreshDataSilently();
+        }
+      } catch {
         void refreshDataSilently();
       }
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        void refreshDataSilently();
-      }
+      if (document.visibilityState === 'visible') void refreshDataSilently();
     };
 
-    const handleWindowFocus = () => {
-      void refreshDataSilently();
-    };
-
-    const handleOnline = () => {
-      void refreshDataSilently();
-    };
-
-    const handleBroadcastMessage = () => {
-      void refreshDataSilently();
-    };
+    const handleWindowFocus = () => void refreshDataSilently();
+    const handleOnline = () => void refreshDataSilently();
 
     window.addEventListener('storage', handleStorage);
     window.addEventListener('focus', handleWindowFocus);
@@ -329,31 +354,22 @@ export function DataProvider({ children }) {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     broadcastChannelRef.current?.addEventListener('message', handleBroadcastMessage);
 
-    const intervalId = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void refreshDataSilently();
-      }
-    }, REALTIME_REFRESH_INTERVAL_MS);
-
     return () => {
       window.removeEventListener('storage', handleStorage);
       window.removeEventListener('focus', handleWindowFocus);
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.clearInterval(intervalId);
       broadcastChannelRef.current?.removeEventListener('message', handleBroadcastMessage);
       broadcastChannelRef.current?.close();
       broadcastChannelRef.current = null;
     };
-  }, [refreshDataSilently]);
+  }, [refreshDataSilently, refreshEntity]);
 
+  // SSE: selective refresh based on entity in the event payload
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
-      return undefined;
-    }
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') return undefined;
 
     const token = localStorage.getItem('token');
-
     if (!token) {
       eventSourceRef.current?.close();
       eventSourceRef.current = null;
@@ -363,105 +379,114 @@ export function DataProvider({ children }) {
     const eventSource = new EventSource(`${API_URL}/realtime/stream?token=${encodeURIComponent(token)}`);
     eventSourceRef.current = eventSource;
 
-    eventSource.onmessage = () => {
-      void refreshDataSilently();
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === 'data-changed' && data.entity && ENTITY_FETCHERS[data.entity]) {
+          void refreshEntity(data.entity);
+        } else if (data.type === 'data-changed') {
+          void refreshDataSilently();
+        }
+        // 'connected' events are ignored
+      } catch {
+        void refreshDataSilently();
+      }
     };
 
     eventSource.onerror = () => {
+      // SSE will auto-reconnect; do a silent full refresh to catch any missed updates
       void refreshDataSilently();
     };
 
     return () => {
       eventSource.close();
-      if (eventSourceRef.current === eventSource) {
-        eventSourceRef.current = null;
-      }
+      if (eventSourceRef.current === eventSource) eventSourceRef.current = null;
     };
-  }, [refreshDataSilently]);
+  }, [refreshDataSilently, refreshEntity]);
 
   const addStudent = useCallback(async (student) => {
     await api.createStudent(student);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('students');
+    notifyDataChanged('students');
+  }, [notifyDataChanged, refreshEntity]);
 
   const updateStudent = useCallback(async (id, student) => {
     await api.updateStudent(id, student);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('students');
+    notifyDataChanged('students');
+  }, [notifyDataChanged, refreshEntity]);
 
   const deleteStudent = useCallback(async (id) => {
     await api.deleteStudent(id);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('students');
+    notifyDataChanged('students');
+  }, [notifyDataChanged, refreshEntity]);
 
   const addSubject = useCallback(async (subject) => {
     await api.createSubject(subject);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('subjects');
+    notifyDataChanged('subjects');
+  }, [notifyDataChanged, refreshEntity]);
 
   const updateSubject = useCallback(async (id, subject) => {
     await api.updateSubject(id, subject);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('subjects');
+    notifyDataChanged('subjects');
+  }, [notifyDataChanged, refreshEntity]);
 
   const deleteSubject = useCallback(async (id) => {
     await api.deleteSubject(id);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('subjects');
+    notifyDataChanged('subjects');
+  }, [notifyDataChanged, refreshEntity]);
 
   const addTeacher = useCallback(async (teacher) => {
     await api.createTeacher(teacher);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('teachers');
+    notifyDataChanged('teachers');
+  }, [notifyDataChanged, refreshEntity]);
 
   const updateTeacher = useCallback(async (id, teacher) => {
     await api.updateTeacher(id, teacher);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('teachers');
+    notifyDataChanged('teachers');
+  }, [notifyDataChanged, refreshEntity]);
 
   const deleteTeacher = useCallback(async (id) => {
     await api.deleteTeacher(id);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('teachers');
+    notifyDataChanged('teachers');
+  }, [notifyDataChanged, refreshEntity]);
 
   const addClass = useCallback(async (classData) => {
     await api.createClass(classData);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('classes');
+    notifyDataChanged('classes');
+  }, [notifyDataChanged, refreshEntity]);
 
   const updateClass = useCallback(async (id, classData) => {
     await api.updateClass(id, classData);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('classes');
+    notifyDataChanged('classes');
+  }, [notifyDataChanged, refreshEntity]);
 
   const deleteClass = useCallback(async (id) => {
     await api.deleteClass(id);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('classes');
+    notifyDataChanged('classes');
+  }, [notifyDataChanged, refreshEntity]);
 
   const addMarks = useCallback(async (newMarks) => {
     await api.createMarks(newMarks);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('marks');
+    notifyDataChanged('marks');
+  }, [notifyDataChanged, refreshEntity]);
 
   const updateMark = useCallback(async (id, marksValue) => {
     await api.updateMark(id, marksValue);
-    await refreshData();
-    notifyDataChanged();
-  }, [notifyDataChanged, refreshData]);
+    await refreshEntity('marks');
+    notifyDataChanged('marks');
+  }, [notifyDataChanged, refreshEntity]);
 
   const getStudentMarks = useCallback((studentId) => {
     return marks.filter((mark) => mark.studentId === studentId);
@@ -507,9 +532,7 @@ export function DataProvider({ children }) {
         rank = index + 1;
         previousTotal = item.total;
       }
-      if (item.studentId === studentId) {
-        break;
-      }
+      if (item.studentId === studentId) break;
     }
 
     return {
@@ -528,28 +551,24 @@ export function DataProvider({ children }) {
       ? await api.generateStudentCredentials(id, false)
       : await api.generateTeacherCredentials(id, false);
 
-    await refreshData();
-    notifyDataChanged();
+    const entity = type === 'student' ? 'students' : 'teachers';
+    await refreshEntity(entity);
+    notifyDataChanged(entity);
 
-    return {
-      username: response.username,
-      password: response.password,
-    };
-  }, [notifyDataChanged, refreshData]);
+    return { username: response.username, password: response.password };
+  }, [notifyDataChanged, refreshEntity]);
 
   const regenerateCredentials = useCallback(async (type, id) => {
     const response = type === 'student'
       ? await api.generateStudentCredentials(id, true)
       : await api.generateTeacherCredentials(id, true);
 
-    await refreshData();
-    notifyDataChanged();
+    const entity = type === 'student' ? 'students' : 'teachers';
+    await refreshEntity(entity);
+    notifyDataChanged(entity);
 
-    return {
-      username: response.username,
-      password: response.password,
-    };
-  }, [notifyDataChanged, refreshData]);
+    return { username: response.username, password: response.password };
+  }, [notifyDataChanged, refreshEntity]);
 
   return (
     <DataContext.Provider
