@@ -7,6 +7,12 @@ import { Button } from '../../components/ui/button.jsx';
 import { Badge } from '../../components/ui/badge.jsx';
 import { Skeleton } from '../../components/ui/skeleton.jsx';
 import { useNavigate } from 'react-router';
+import { DashboardHeader } from './DashboardHeader.jsx';
+import {
+  formatTeacherClassLabel,
+  getTeacherAssignedClasses,
+  getTeacherAssignedClassIds,
+} from '../../utils/teacherAssignments.js';
 import {
   Select,
   SelectContent,
@@ -22,10 +28,11 @@ export function TeacherDashboard() {
   const [searchTerm, setSearchTerm] = useState('');
 
   const currentTeacher = teachers.find((teacher) => teacher.id === user?.id) || null;
-  const assignedClassIds = currentTeacher?.assignedClassIds || (currentTeacher?.assignedClassId ? [currentTeacher.assignedClassId] : []);
-  const assignedClasses = classes.filter((classItem) => assignedClassIds.includes(classItem.id));
+  const assignedClassIds = getTeacherAssignedClassIds(currentTeacher, classes);
+  const assignedClasses = getTeacherAssignedClasses(currentTeacher, classes);
   const [selectedClassId, setSelectedClassId] = useState('');
   const activeClassId = selectedClassId || assignedClasses[0]?.id || '';
+  const activeClass = assignedClasses.find((classItem) => classItem.id === activeClassId) || assignedClasses[0] || null;
   const assignedStudents = useMemo(
     () => (
       activeClassId
@@ -34,6 +41,15 @@ export function TeacherDashboard() {
     ),
     [activeClassId, assignedClassIds, students]
   );
+
+  React.useEffect(() => {
+    if (!selectedClassId) return;
+
+    const hasSelectedClass = assignedClasses.some((classItem) => classItem.id === selectedClassId);
+    if (!hasSelectedClass) {
+      setSelectedClassId('');
+    }
+  }, [assignedClasses, selectedClassId]);
 
   if (loading) {
     return (
@@ -57,12 +73,11 @@ export function TeacherDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Welcome, {teacherName}</h2>
-          <p className="text-gray-600 mt-1">Department: {teacherDepartment}</p>
-          <p className="text-gray-600 mt-1">Subject: {currentTeacher?.subjectName || 'Not assigned'}</p>
-        </div>
+      <DashboardHeader
+        eyebrow="Teaching Workspace"
+        title={`Welcome, ${teacherName}`}
+        description={`Department: ${teacherDepartment}\nSubject: ${currentTeacher?.subjectName || 'Not assigned'}\nActive Class: ${activeClass ? formatTeacherClassLabel(activeClass) : 'No class assigned'}`}
+      >
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => navigate('/students')}>
             View Students
@@ -74,7 +89,7 @@ export function TeacherDashboard() {
             View Reports
           </Button>
         </div>
-      </div>
+      </DashboardHeader>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="border-gray-200">
@@ -127,7 +142,7 @@ export function TeacherDashboard() {
                   <SelectContent>
                     {assignedClasses.map((classItem) => (
                       <SelectItem key={classItem.id} value={classItem.id}>
-                        {classItem.name}
+                        {formatTeacherClassLabel(classItem)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -178,7 +193,7 @@ export function TeacherDashboard() {
                 {assignedClasses.length > 0 ? (
                   assignedClasses.map((classItem) => (
                     <Badge key={classItem.id} variant="secondary" className="px-3 py-1 bg-blue-50 text-blue-700">
-                      {classItem.name}
+                      {formatTeacherClassLabel(classItem)}
                     </Badge>
                   ))
                 ) : (

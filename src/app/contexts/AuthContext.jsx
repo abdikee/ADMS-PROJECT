@@ -4,14 +4,26 @@ import auth from '../services/auth.js';
 
 const AuthContext = createContext(undefined);
 
+const normalizeAuthUser = (rawUser) => {
+  if (!rawUser) {
+    return null;
+  }
+
+  return {
+    ...rawUser,
+    id: rawUser.id !== undefined && rawUser.id !== null ? String(rawUser.id) : rawUser.id,
+  };
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const persistUser = (nextUser) => {
-    setUser(nextUser);
-    if (nextUser) {
-      localStorage.setItem('sams_user', JSON.stringify(nextUser));
+    const normalizedUser = normalizeAuthUser(nextUser);
+    setUser(normalizedUser);
+    if (normalizedUser) {
+      localStorage.setItem('sams_user', JSON.stringify(normalizedUser));
     } else {
       auth.clearSession();
     }
@@ -24,7 +36,7 @@ export function AuthProvider({ children }) {
         const savedUser = auth.getUser();
 
         if (savedUser && auth.getToken()) {
-          setUser(savedUser);
+          persistUser(savedUser);
         } else {
           auth.clearSession();
           setUser(null);
@@ -62,7 +74,7 @@ export function AuthProvider({ children }) {
       };
 
       const userData = {
-        id: response.user.studentId || response.user.teacherId || response.user.id,
+        id: String(response.user.studentId || response.user.teacherId || response.user.id),
         name: response.user.name,
         role: roleMap[response.user.role] || 'Student',
         email: response.user.email,

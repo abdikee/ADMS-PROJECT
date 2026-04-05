@@ -59,6 +59,8 @@ const initialFormData = {
   homeroomClassId: '',
 };
 
+const NO_HOMEROOM_VALUE = '__none__';
+
 export function TeachersPage() {
   const { user } = useAuth();
   const { teachers, classes, subjects, departments, addTeacher, updateTeacher, deleteTeacher } = useData();
@@ -136,7 +138,7 @@ export function TeachersPage() {
     hireDate: formData.hireDate || undefined,
     subjectId: parseInt(formData.subjectId, 10),
     assignedClassIds: formData.assignedClassIds.map((classId) => parseInt(classId, 10)),
-    homeroomClassId: formData.homeroomClassId ? parseInt(formData.homeroomClassId, 10) : undefined,
+    homeroomClassId: formData.homeroomClassId ? parseInt(formData.homeroomClassId, 10) : null,
   });
 
   const handleAdd = async () => {
@@ -409,11 +411,17 @@ export function TeachersPage() {
             {renderClassSelection()}
             <div className="space-y-2">
               <Label>Homeroom Class</Label>
-              <Select value={formData.homeroomClassId} onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value })}>
+              <Select
+                value={formData.homeroomClassId || NO_HOMEROOM_VALUE}
+                onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value })}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select homeroom class" />
+                  <SelectValue placeholder="No homeroom class" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NO_HOMEROOM_VALUE}>
+                    No homeroom assignment
+                  </SelectItem>
                   {homeroomOptions.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
@@ -511,11 +519,17 @@ export function TeachersPage() {
             {renderClassSelection()}
             <div className="space-y-2">
               <Label>Homeroom Class</Label>
-              <Select value={formData.homeroomClassId} onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value })}>
+              <Select
+                value={formData.homeroomClassId || NO_HOMEROOM_VALUE}
+                onValueChange={(value) => setFormData({ ...formData, homeroomClassId: value === NO_HOMEROOM_VALUE ? '' : value })}
+              >
                 <SelectTrigger>
-                  <SelectValue placeholder="Select homeroom class" />
+                  <SelectValue placeholder="No homeroom class" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={NO_HOMEROOM_VALUE}>
+                    No homeroom assignment
+                  </SelectItem>
                   {homeroomOptions.map((cls) => (
                     <SelectItem key={cls.id} value={cls.id}>
                       {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}

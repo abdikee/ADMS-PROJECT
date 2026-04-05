@@ -127,6 +127,19 @@ CREATE TABLE students (
   INDEX idx_admission_number (admission_number)
 ) AUTO_INCREMENT=200001;
 
+-- User profiles table
+CREATE TABLE user_profiles (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL UNIQUE,
+  full_name VARCHAR(120),
+  email VARCHAR(120),
+  phone VARCHAR(30),
+  profile_photo VARCHAR(255),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 -- ============================================
 -- ACADEMIC TABLES
 -- ============================================
@@ -462,10 +475,6 @@ ADD FOREIGN KEY (homeroom_teacher_id) REFERENCES teachers(id) ON DELETE SET NULL
 -- ============================================
 -- INSERT DEFAULT DATA
 -- ============================================
-
--- Insert default admin user (password: admin123 - should be hashed in production)
-INSERT INTO users (username, password, role) 
-VALUES ('admin', '$2b$10$rQZ9vXqZ9vXqZ9vXqZ9vXuK8YqZ9vXqZ9vXqZ9vXqZ9vXqZ9vXqZ9v', 'admin');
 
 -- Insert default academic year
 INSERT INTO academic_years (year, semester, start_date, end_date, is_active)

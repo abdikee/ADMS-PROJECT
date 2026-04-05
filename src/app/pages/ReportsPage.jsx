@@ -14,6 +14,7 @@ import {
 import { Checkbox } from '../components/ui/checkbox.jsx';
 import { Label } from '../components/ui/label.jsx';
 import { toast } from '../components/ui/sonner.jsx';
+import { getTeacherAssignedClassIds } from '../utils/teacherAssignments.js';
 
 function aggregateClassReports(students, marks, subjects, fallbackSubjectIds = []) {
   const subjectIds = Array.from(new Set([
@@ -187,8 +188,14 @@ export function ReportsPage() {
   const isTeacher = user?.role === 'Teacher';
   const isStudent = user?.role === 'Student';
   const currentTeacher = isTeacher ? teachers.find((teacher) => teacher.id === user?.id) : null;
-  const teacherClassIds = currentTeacher?.assignedClassIds || (currentTeacher?.assignedClassId ? [currentTeacher.assignedClassId] : []);
-  const availableClasses = isTeacher ? classes.filter((classItem) => teacherClassIds.includes(classItem.id)) : classes;
+  const teacherClassIds = useMemo(
+    () => getTeacherAssignedClassIds(currentTeacher, classes),
+    [currentTeacher, classes]
+  );
+  const availableClasses = useMemo(
+    () => (isTeacher ? classes.filter((classItem) => teacherClassIds.includes(classItem.id)) : classes),
+    [isTeacher, classes, teacherClassIds]
+  );
 
   useEffect(() => {
     if (!availableClasses.length || isStudent) return;
@@ -203,13 +210,22 @@ export function ReportsPage() {
   const currentStudentClassId = currentStudent?.classId ? String(currentStudent.classId) : '';
   const activeClassId = isStudent ? currentStudentClassId : selectedClassId;
   const selectedClass = classes.find((classItem) => classItem.id === activeClassId) || null;
-  const classStudents = students.filter((student) => String(student.classId) === activeClassId);
-  const classMarks = marks.filter((mark) => String(mark.classId) === activeClassId);
-  const fallbackTeacherSubjectIds = isTeacher && currentTeacher?.subjectId ? [currentTeacher.subjectId] : [];
+  const classStudents = useMemo(
+    () => students.filter((student) => String(student.classId) === activeClassId),
+    [students, activeClassId]
+  );
+  const classMarks = useMemo(
+    () => marks.filter((mark) => String(mark.classId) === activeClassId),
+    [marks, activeClassId]
+  );
+  const fallbackTeacherSubjectIds = useMemo(
+    () => (isTeacher && currentTeacher?.subjectId ? [currentTeacher.subjectId] : []),
+    [isTeacher, currentTeacher?.subjectId]
+  );
 
   const classReports = useMemo(
     () => aggregateClassReports(classStudents, classMarks, subjects, fallbackTeacherSubjectIds),
-    [classMarks, classStudents, fallbackTeacherSubjectIds, subjects]
+    [classStudents, classMarks, subjects, fallbackTeacherSubjectIds]
   );
 
   useEffect(() => {

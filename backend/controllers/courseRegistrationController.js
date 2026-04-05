@@ -6,19 +6,17 @@ function ensureCourseRegistrationsTable() {
   if (!ensureTablePromise) {
     ensureTablePromise = pool.query(`
       CREATE TABLE IF NOT EXISTS course_registrations (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        student_id INT NOT NULL,
-        subject_id INT NOT NULL,
-        academic_year_id INT NOT NULL,
-        status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        UNIQUE KEY unique_course_registration (student_id, subject_id, academic_year_id),
+        id BIGSERIAL PRIMARY KEY,
+        student_id BIGINT NOT NULL,
+        subject_id BIGINT NOT NULL,
+        academic_year_id BIGINT NOT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT unique_course_registration UNIQUE (student_id, subject_id, academic_year_id),
         FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE,
         FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
-        FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE CASCADE,
-        INDEX idx_course_reg_student (student_id),
-        INDEX idx_course_reg_year (academic_year_id)
+        FOREIGN KEY (academic_year_id) REFERENCES academic_years(id) ON DELETE CASCADE
       )
     `);
   }
@@ -95,7 +93,8 @@ export const saveMyCourseRegistrations = async (req, res) => {
       await connection.query(
         `INSERT INTO course_registrations (student_id, subject_id, academic_year_id, status)
          VALUES (?, ?, ?, 'pending')
-         ON DUPLICATE KEY UPDATE status = VALUES(status), updated_at = CURRENT_TIMESTAMP`,
+         ON CONFLICT (student_id, subject_id, academic_year_id)
+         DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
         [req.user.studentId, subjectId, academicYearId]
       );
     }

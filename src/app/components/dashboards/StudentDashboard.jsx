@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router';
 import { Card, CardContent } from '../../components/ui/card.jsx';
 import { Button } from '../../components/ui/button.jsx';
 import { useAuth } from '../../contexts/AuthContext.jsx';
+import { DashboardHeader } from './DashboardHeader.jsx';
 
 export function StudentDashboard() {
   const navigate = useNavigate();
@@ -11,12 +12,11 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900">My Academic Report</h2>
-        <p className="text-gray-600 mt-1">
-          Welcome {user?.name || 'Student'}, please view your academic report card below.
-        </p>
-      </div>
+      <DashboardHeader
+        eyebrow="Student Portal"
+        title="My Academic Report"
+        description={`Welcome ${user?.name || 'Student'}, please view your academic report card below.`}
+      />
 
       <Card className="border-gray-200">
         <CardContent className="py-12 flex flex-col items-center justify-center gap-6">

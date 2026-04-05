@@ -1,6 +1,7 @@
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
 
 export const login = async (req, res) => {
   try {
@@ -21,21 +22,20 @@ export const login = async (req, res) => {
     }
 
     const user = users[0];
+    if (!user.is_active) {
+      return res.status(403).json({ error: 'Account is inactive' });
+    }
+
     const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2');
-    const isValidPassword = isBcryptHash
-      ? await bcrypt.compare(password, user.password)
-      : password === user.password;
+    if (!isBcryptHash) {
+      console.error(`Rejected login for user ${user.username}: password is not bcrypt-hashed`);
+      return res.status(500).json({ error: 'Account password is not configured securely. Contact an administrator.' });
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
       return res.status(401).json({ error: 'Invalid credentials' });
-    }
-
-    if (!isBcryptHash) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      await pool.query(
-        'UPDATE users SET password = ? WHERE id = ?',
-        [hashedPassword, user.id]
-      );
     }
 
     // Get additional user info based on role
@@ -78,7 +78,7 @@ export const login = async (req, res) => {
         role: user.role,
         ...userData
       },
-      process.env.JWT_SECRET,
+      env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 

@@ -136,8 +136,8 @@ const teacherSelect = `
     t.is_active,
     MAX(ts.subject_id) AS subject_id,
     MAX(sub.name) AS subject_name,
-    GROUP_CONCAT(DISTINCT ts.class_id ORDER BY cls.name SEPARATOR ',') AS assigned_class_ids,
-    GROUP_CONCAT(DISTINCT cls.name ORDER BY cls.name SEPARATOR '||') AS assigned_class_names,
+    STRING_AGG(DISTINCT ts.class_id::text, ',' ORDER BY ts.class_id::text) AS assigned_class_ids,
+    STRING_AGG(DISTINCT cls.name, '||' ORDER BY cls.name) AS assigned_class_names,
     MIN(ts.class_id) AS assigned_class_id,
     MIN(cls.name) AS assigned_class_name,
     MAX(home.id) AS homeroom_class_id,
@@ -325,11 +325,13 @@ export const updateTeacher = async (req, res) => {
       );
     }
 
+    const hasHomeroomClassUpdate = Object.prototype.hasOwnProperty.call(updates, 'homeroomClassId');
+
     if (
       updates.subjectId !== undefined ||
       updates.assignedClassId !== undefined ||
       updates.assignedClassIds !== undefined ||
-      updates.homeroomClassId !== undefined
+      hasHomeroomClassUpdate
     ) {
       const [existingAssignments] = await connection.query(
         'SELECT subject_id, class_id FROM teacher_subjects WHERE teacher_id = ? ORDER BY class_id',
@@ -344,7 +346,9 @@ export const updateTeacher = async (req, res) => {
       const assignedClassIds = updates.assignedClassIds !== undefined || updates.assignedClassId !== undefined
         ? normalizeAssignedClassIds(updates)
         : existingAssignments.map((assignment) => Number(assignment.class_id));
-      const homeroomClassId = updates.homeroomClassId ?? existingHomeroom[0]?.id ?? null;
+      const homeroomClassId = hasHomeroomClassUpdate
+        ? (updates.homeroomClassId ? Number(updates.homeroomClassId) : null)
+        : (existingHomeroom[0]?.id ?? null);
 
       if (!subjectId || assignedClassIds.length === 0) {
         throw createHttpError('Teacher assignment requires one subject and at least one class');

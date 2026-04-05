@@ -1,7 +1,5 @@
 import auth from './auth.js';
-
-// API Service for connecting to backend
-const API_URL = (import.meta.env.VITE_API_URL || 'http://localhost:5000/api').replace(/\/+$/, '');
+import { API_URL } from './config.js';
 
 export class ApiError extends Error {
   constructor(message, status, endpoint, url) {

@@ -3,6 +3,7 @@ import { Plus, Pencil, Trash2, Search, Eye } from 'lucide-react';
 import { useData } from '../contexts/DataContext.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { Navigate } from 'react-router';
+import { getTeacherAssignedClassIds } from '../utils/teacherAssignments.js';
 import { Button } from '../components/ui/button.jsx';
 import { Input } from '../components/ui/input.jsx';
 import { Label } from '../components/ui/label.jsx';
@@ -94,6 +95,10 @@ export function StudentsPage() {
       toast.error('Username is required');
       return false;
     }
+    if (!formData.password) {
+      toast.error('Password is required');
+      return false;
+    }
     return true;
   };
 
@@ -110,7 +115,7 @@ export function StudentsPage() {
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
         username: formData.username,
-        password: formData.password || 'student123',
+        password: formData.password,
       });
       toast.success('Student added successfully');
       setIsAddDialogOpen(false);
@@ -184,7 +189,7 @@ export function StudentsPage() {
   };
 
   const currentTeacher = isTeacher ? teachers.find((teacher) => teacher.id === user?.id) : null;
-  const teacherClassIds = currentTeacher?.assignedClassIds || (currentTeacher?.assignedClassId ? [currentTeacher.assignedClassId] : []);
+  const teacherClassIds = getTeacherAssignedClassIds(currentTeacher, classes);
 
   const visibleStudents = isTeacher
     ? students.filter((student) => teacherClassIds.includes(String(student.classId)))
@@ -387,7 +392,7 @@ export function StudentsPage() {
                       <Input id="username" value={formData.username} onChange={(e) => setFormData({ ...formData, username: e.target.value })} />
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="password">Password (optional)</Label>
+                    <Label htmlFor="password">Password *</Label>
                       <Input id="password" type="password" value={formData.password} onChange={(e) => setFormData({ ...formData, password: e.target.value })} />
                     </div>
                   </div>

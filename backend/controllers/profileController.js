@@ -7,14 +7,14 @@ function ensureUserProfilesTable() {
   if (!ensureUserProfilesTablePromise) {
     ensureUserProfilesTablePromise = pool.query(`
       CREATE TABLE IF NOT EXISTS user_profiles (
-        id INT PRIMARY KEY AUTO_INCREMENT,
-        user_id INT NOT NULL UNIQUE,
+        id BIGSERIAL PRIMARY KEY,
+        user_id BIGINT NOT NULL UNIQUE,
         full_name VARCHAR(120),
         email VARCHAR(120),
         phone VARCHAR(30),
         profile_photo VARCHAR(255),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `);
@@ -85,7 +85,7 @@ async function fetchTeacherProfile(userId) {
       t.profile_photo,
       d.name AS department_name,
       MAX(sub.name) AS subject_name,
-      GROUP_CONCAT(DISTINCT cls.name ORDER BY cls.name SEPARATOR '||') AS assigned_class_names,
+      STRING_AGG(DISTINCT cls.name, '||' ORDER BY cls.name) AS assigned_class_names,
       MAX(home.name) AS homeroom_class_name
     FROM users u
     JOIN teachers t ON t.user_id = u.id
@@ -251,11 +251,12 @@ export const updateMyProfile = async (req, res) => {
       await pool.query(
         `INSERT INTO user_profiles (user_id, full_name, email, phone, profile_photo)
          VALUES (?, ?, ?, ?, ?)
-         ON DUPLICATE KEY UPDATE
-           full_name = VALUES(full_name),
-           email = VALUES(email),
-           phone = VALUES(phone),
-           profile_photo = VALUES(profile_photo)`,
+         ON CONFLICT (user_id) DO UPDATE SET
+           full_name = EXCLUDED.full_name,
+           email = EXCLUDED.email,
+           phone = EXCLUDED.phone,
+           profile_photo = EXCLUDED.profile_photo,
+           updated_at = CURRENT_TIMESTAMP`,
         [req.user.id, merged.name, merged.email, merged.phone || null, merged.profilePhoto || null]
       );
     } else if (req.user.role === 'teacher') {
@@ -366,9 +367,11 @@ export const changeMyPassword = async (req, res) => {
 
     const user = users[0];
     const isBcryptHash = typeof user.password === 'string' && user.password.startsWith('$2');
-    const isValidPassword = isBcryptHash
-      ? await bcrypt.compare(currentPassword, user.password)
-      : currentPassword === user.password;
+    if (!isBcryptHash) {
+      return res.status(500).json({ error: 'Account password is not configured securely. Contact an administrator.' });
+    }
+
+    const isValidPassword = await bcrypt.compare(currentPassword, user.password);
 
     if (!isValidPassword) {
       return res.status(400).json({ error: 'Current password is incorrect' });

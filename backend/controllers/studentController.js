@@ -108,7 +108,11 @@ export const createStudent = async (req, res) => {
       password
     } = req.body;
 
-    const hashedPassword = await bcrypt.hash(password || 'student123', 10);
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
     const [userResult] = await connection.query(
       'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
       [username, hashedPassword, 'student']

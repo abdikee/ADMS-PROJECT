@@ -1,27 +1,145 @@
-import mysql from 'mysql2/promise';
-import dotenv from 'dotenv';
+import { Pool } from 'pg';
+import { env } from './env.js';
 
-dotenv.config();
+function isInsertStatement(sql) {
+  return /^\s*insert\s+/i.test(sql);
+}
 
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || 'abdike',
-  password: process.env.DB_PASSWORD || 'abdike@3132',
-  database: process.env.DB_NAME || 'sams_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+function hasReturningClause(sql) {
+  return /\breturning\b/i.test(sql);
+}
 
-// Test connection
-pool.getConnection()
-  .then(connection => {
-    console.log('✓ Database connected successfully');
-    connection.release();
+function convertPlaceholders(sql, params = []) {
+  let paramIndex = 0;
+  let placeholderIndex = 1;
+  const convertedParams = [];
+
+  const convertedSql = sql.replace(/\?/g, () => {
+    const value = params[paramIndex];
+    paramIndex += 1;
+
+    if (Array.isArray(value)) {
+      if (value.length === 0) {
+        return 'NULL';
+      }
+
+      const placeholders = value.map((item) => {
+        convertedParams.push(item);
+        const placeholder = `$${placeholderIndex}`;
+        placeholderIndex += 1;
+        return placeholder;
+      });
+
+      return placeholders.join(', ');
+    }
+
+    convertedParams.push(value);
+    const placeholder = `$${placeholderIndex}`;
+    placeholderIndex += 1;
+    return placeholder;
+  });
+
+  return { sql: convertedSql, params: convertedParams };
+}
+
+function normalizeSql(sql) {
+  const trimmedSql = sql.trim();
+  if (isInsertStatement(trimmedSql) && !hasReturningClause(trimmedSql)) {
+    return `${trimmedSql} RETURNING id`;
+  }
+
+  return trimmedSql;
+}
+
+function mapError(error) {
+  if (error?.code === '23505') {
+    error.code = 'ER_DUP_ENTRY';
+  }
+
+  return error;
+}
+
+function normalizeResult(originalSql, result) {
+  if (isInsertStatement(originalSql)) {
+    return [{
+      insertId: result.rows?.[0]?.id ?? null,
+      rowCount: result.rowCount,
+      rows: result.rows,
+    }];
+  }
+
+  return [result.rows];
+}
+
+class PostgresConnection {
+  constructor(client) {
+    this.client = client;
+  }
+
+  async query(sql, params = []) {
+    try {
+      const statement = convertPlaceholders(normalizeSql(sql), params);
+      const result = await this.client.query(statement.sql, statement.params);
+      return normalizeResult(sql, result);
+    } catch (error) {
+      throw mapError(error);
+    }
+  }
+
+  async beginTransaction() {
+    await this.client.query('BEGIN');
+  }
+
+  async commit() {
+    await this.client.query('COMMIT');
+  }
+
+  async rollback() {
+    await this.client.query('ROLLBACK');
+  }
+
+  release() {
+    this.client.release();
+  }
+}
+
+class PostgresPoolAdapter {
+  constructor() {
+    this.pool = new Pool({
+      connectionString: env.DATABASE_URL,
+      ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+    });
+  }
+
+  async query(sql, params = []) {
+    const client = await this.pool.connect();
+
+    try {
+      const connection = new PostgresConnection(client);
+      return await connection.query(sql, params);
+    } finally {
+      client.release();
+    }
+  }
+
+  async getConnection() {
+    const client = await this.pool.connect();
+    return new PostgresConnection(client);
+  }
+
+  async end() {
+    await this.pool.end();
+  }
+}
+
+const pool = new PostgresPoolAdapter();
+
+pool.query('SELECT 1')
+  .then(() => {
+    console.log('Database connected successfully');
   })
-  .catch(err => {
-    console.error('✗ Database connection failed:', err.message);
+  .catch((error) => {
+    console.error('Database connection failed:', error.message || error.code || 'Unknown connection error');
   });
 
 export default pool;

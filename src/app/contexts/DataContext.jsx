@@ -1,11 +1,11 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../services/api.js';
+import { API_URL } from '../services/config.js';
 
 const DataContext = createContext(undefined);
 const DATA_SYNC_KEY = 'sams_data_sync';
 const DATA_SYNC_CHANNEL = 'sams_data_channel';
-const REALTIME_REFRESH_INTERVAL_MS = 5000;
-
+const REALTIME_REFRESH_INTERVAL_MS = 2000;
 const hasRealCredentials = (username) => Boolean(username && !username.startsWith('temp_'));
 
 const normalizeStudent = (student) => {
@@ -177,6 +177,7 @@ export function DataProvider({ children }) {
   const [error, setError] = useState(null);
   const fetchInFlightRef = useRef(null);
   const broadcastChannelRef = useRef(null);
+  const eventSourceRef = useRef(null);
 
   const fetchAllData = useCallback(async ({ silent = false, force = false } = {}) => {
     if (fetchInFlightRef.current && !force) {
@@ -343,6 +344,38 @@ export function DataProvider({ children }) {
       broadcastChannelRef.current?.removeEventListener('message', handleBroadcastMessage);
       broadcastChannelRef.current?.close();
       broadcastChannelRef.current = null;
+    };
+  }, [refreshDataSilently]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof EventSource === 'undefined') {
+      return undefined;
+    }
+
+    const token = localStorage.getItem('token');
+
+    if (!token) {
+      eventSourceRef.current?.close();
+      eventSourceRef.current = null;
+      return undefined;
+    }
+
+    const eventSource = new EventSource(`${API_URL}/realtime/stream?token=${encodeURIComponent(token)}`);
+    eventSourceRef.current = eventSource;
+
+    eventSource.onmessage = () => {
+      void refreshDataSilently();
+    };
+
+    eventSource.onerror = () => {
+      void refreshDataSilently();
+    };
+
+    return () => {
+      eventSource.close();
+      if (eventSourceRef.current === eventSource) {
+        eventSourceRef.current = null;
+      }
     };
   }, [refreshDataSilently]);
 
