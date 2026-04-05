@@ -1,109 +1,40 @@
-# Student Academic Record Management System
+# Student Academic Record Management System (SAMS)
 
-SAMS is set up for a split deployment:
-
-- Frontend on Vercel
-- Backend on Render
-- Database on Supabase Postgres
-
-This keeps your React app simple on Vercel and avoids forcing the Express backend into Vercel serverless functions.
+A web-based academic record management system for schools. Supports admin, teacher, and student roles.
 
 ## Stack
 
 - Frontend: React 18, Vite, Tailwind CSS
-- Backend: Node.js, Express, JWT, bcrypt
-- Database: Supabase Postgres
-- Hosting: Vercel + Render
+- Backend: Node.js, Express, JWT auth
+- Database: Supabase (Postgres)
+- Hosting: Vercel (frontend) + Render (backend)
 
-## Deployment Files Included
+## Features
 
-- [`vercel.json`](c:\Users\abdik\3D Objects\Student Academic Record Management up - Copy\vercel.json) for the frontend
-- [`render.yaml`](c:\Users\abdik\3D Objects\Student Academic Record Management up - Copy\render.yaml) for the backend
-- [`database/schema.supabase.complete.sql`](c:\Users\abdik\3D Objects\Student Academic Record Management up - Copy\database\schema.supabase.complete.sql) for one-shot Supabase setup
+- Role-based access: Admin, Teacher, Student
+- Student and teacher management
+- Class and subject assignment
+- Marks entry with Mid, Final, Quiz, Assignment breakdown — total auto-calculated
+- Grade computation and academic reports
+- Academic year and exam type management
 
-## 1. Supabase Setup
+## Project Structure
 
-Open the Supabase SQL Editor and paste:
-
-[`database/schema.supabase.complete.sql`](c:\Users\abdik\3D Objects\Student Academic Record Management up - Copy\database\schema.supabase.complete.sql)
-
-Temporary seeded admin:
-
-- Username: `admin`
-- Password: `Admin@123456`
-
-Change that password after first login.
-
-## 2. Backend Deployment on Render
-
-Create a new Render Web Service from this repo.
-
-Render is already prepared to use:
-
-- Root directory: `backend`
-- Build command: `npm install`
-- Start command: `npm start`
-- Health check: `/health`
-
-Set these environment variables in Render:
-
-```env
-DATABASE_URL=postgresql://postgres:YOUR_SUPABASE_DB_PASSWORD@db.zggitbfdoxpsoummthcp.supabase.co:5432/postgres
-JWT_SECRET=replace_with_a_random_secret_at_least_32_characters_long
-CORS_ORIGIN=https://your-frontend-project.vercel.app
-NODE_ENV=production
-PORT=5000
+```
+/
+├── src/              # React frontend
+├── backend/          # Express API server
+├── database/         # SQL schema files
+├── vercel.json       # Vercel frontend config
+└── render.yaml       # Render backend config
 ```
 
-After deploy, copy the backend URL, for example:
+## Local Development
 
-```text
-https://sams-backend.onrender.com
-```
+1. Copy `.env.example` to `.env` and fill in your values
+2. Copy `backend/.env.example` to `backend/.env` and fill in your values
 
-Check:
-
-```text
-https://sams-backend.onrender.com/health
-```
-
-## 3. Frontend Deployment on Vercel
-
-Deploy the repo to Vercel as a Vite frontend.
-
-Set this environment variable in Vercel:
-
-```env
-VITE_API_URL=https://your-backend-service.onrender.com/api
-```
-
-Example:
-
-```env
-VITE_API_URL=https://sams-backend.onrender.com/api
-```
-
-Then redeploy the frontend.
-
-## 4. Local Development
-
-Frontend `.env`:
-
-```env
-VITE_API_URL=http://localhost:5000/api
-```
-
-Backend `backend/.env`:
-
-```env
-DATABASE_URL=postgresql://postgres:YOUR_SUPABASE_DB_PASSWORD@db.zggitbfdoxpsoummthcp.supabase.co:5432/postgres
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=replace_with_a_random_secret_at_least_32_characters_long
-CORS_ORIGIN=http://localhost:5173
-```
-
-Run backend:
+Run the backend:
 
 ```bash
 cd backend
@@ -111,24 +42,46 @@ npm install
 npm start
 ```
 
-Run frontend:
+Run the frontend:
 
 ```bash
 npm install
 npm run dev
 ```
 
-## 5. Verification
+## Deployment
 
-- Supabase schema runs successfully
-- Render backend starts and `/health` returns OK
-- Vercel frontend uses the Render backend URL through `VITE_API_URL`
-- Admin login works with the seeded admin
-- Protected routes work after login
+### Database
 
-## Important Notes
+Run `database/schema.supabase.complete.sql` in your Supabase SQL editor to set up the schema.
 
-- Vercel does not automatically run `backend/server.js`
-- The frontend and backend must be deployed separately in this setup
-- The backend needs the Supabase Postgres password, not just the project URL
-- If login fails in production, first verify Render env vars and `CORS_ORIGIN`
+### Backend (Render)
+
+- Root directory: `backend`
+- Build command: `npm install`
+- Start command: `npm start`
+- Health check path: `/health`
+
+Required environment variables:
+
+```
+DATABASE_URL=
+JWT_SECRET=
+CORS_ORIGIN=
+NODE_ENV=production
+PORT=5000
+```
+
+### Frontend (Vercel)
+
+Deploy as a Vite project. Set one environment variable:
+
+```
+VITE_API_URL=https://your-backend-url.onrender.com/api
+```
+
+## Notes
+
+- Frontend and backend are deployed separately
+- After first deploy, create an admin account using `backend/scripts/bootstrap-admin.js`
+- Change default credentials immediately after first login
