@@ -193,10 +193,10 @@ class ApiService {
     });
   }
 
-  async updateMark(id, marks) {
+  async updateMark(id, payload) {
     return this.request(`/marks/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ marks }),
+      body: JSON.stringify(payload),
     });
   }
 
