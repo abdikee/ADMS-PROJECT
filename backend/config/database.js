@@ -9,34 +9,34 @@ function hasReturningClause(sql) {
   return /\breturning\b/i.test(sql);
 }
 
-function convertPlaceholders(sql, params = []) {
+function convertPlaceholders(sql, params) {
+  const safeParams = params || [];
+
+  // If SQL already uses $1-style placeholders, pass through unchanged
+  if (/\$\d+/.test(sql)) {
+    return { sql, params: safeParams };
+  }
+
+  // Otherwise convert ? placeholders to $N for pg
   let paramIndex = 0;
   let placeholderIndex = 1;
   const convertedParams = [];
 
   const convertedSql = sql.replace(/\?/g, () => {
-    const value = params[paramIndex];
+    const value = safeParams[paramIndex];
     paramIndex += 1;
 
     if (Array.isArray(value)) {
-      if (value.length === 0) {
-        return 'NULL';
-      }
-
+      if (value.length === 0) return 'NULL';
       const placeholders = value.map((item) => {
         convertedParams.push(item);
-        const placeholder = `$${placeholderIndex}`;
-        placeholderIndex += 1;
-        return placeholder;
+        return '$' + (placeholderIndex++);
       });
-
       return placeholders.join(', ');
     }
 
     convertedParams.push(value);
-    const placeholder = `$${placeholderIndex}`;
-    placeholderIndex += 1;
-    return placeholder;
+    return '$' + (placeholderIndex++);
   });
 
   return { sql: convertedSql, params: convertedParams };
@@ -45,29 +45,26 @@ function convertPlaceholders(sql, params = []) {
 function normalizeSql(sql) {
   const trimmedSql = sql.trim();
   if (isInsertStatement(trimmedSql) && !hasReturningClause(trimmedSql)) {
-    return `${trimmedSql} RETURNING id`;
+    return trimmedSql + ' RETURNING id';
   }
-
   return trimmedSql;
 }
 
 function mapError(error) {
-  if (error?.code === '23505') {
+  if (error && error.code === '23505') {
     error.code = 'ER_DUP_ENTRY';
   }
-
   return error;
 }
 
 function normalizeResult(originalSql, result) {
   if (isInsertStatement(originalSql)) {
     return [{
-      insertId: result.rows?.[0]?.id ?? null,
+      insertId: result.rows && result.rows[0] ? result.rows[0].id : null,
       rowCount: result.rowCount,
       rows: result.rows,
     }];
   }
-
   return [result.rows];
 }
 
@@ -76,9 +73,9 @@ class PostgresConnection {
     this.client = client;
   }
 
-  async query(sql, params = []) {
+  async query(sql, params) {
     try {
-      const statement = convertPlaceholders(normalizeSql(sql), params);
+      const statement = convertPlaceholders(normalizeSql(sql), params || []);
       const result = await this.client.query(statement.sql, statement.params);
       return normalizeResult(sql, result);
     } catch (error) {
@@ -111,12 +108,11 @@ class PostgresPoolAdapter {
     });
   }
 
-  async query(sql, params = []) {
+  async query(sql, params) {
     const client = await this.pool.connect();
-
     try {
       const connection = new PostgresConnection(client);
-      return await connection.query(sql, params);
+      return await connection.query(sql, params || []);
     } finally {
       client.release();
     }
@@ -135,9 +131,7 @@ class PostgresPoolAdapter {
 const pool = new PostgresPoolAdapter();
 
 pool.query('SELECT 1')
-  .then(() => {
-    console.log('Database connected successfully');
-  })
+  .then(() => { console.log('Database connected successfully'); })
   .catch((error) => {
     console.error('Database connection failed:', error.message || error.code || 'Unknown connection error');
   });
