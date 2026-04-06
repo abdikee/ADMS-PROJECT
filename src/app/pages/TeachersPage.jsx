@@ -395,7 +395,7 @@ export function TeachersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((department) => (
-                      <SelectItem key={department.id} value={department.id}>
+                      <SelectItem key={department.id} value={String(department.id)}>
                         {department.name}{department.code ? ` (${department.code})` : ''}
                       </SelectItem>
                     ))}
@@ -491,7 +491,7 @@ export function TeachersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {departments.map((department) => (
-                      <SelectItem key={department.id} value={department.id}>
+                      <SelectItem key={department.id} value={String(department.id)}>
                         {department.name}{department.code ? ` (${department.code})` : ''}
                       </SelectItem>
                     ))}
