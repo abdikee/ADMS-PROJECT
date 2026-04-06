@@ -151,6 +151,10 @@ class ApiService {
     });
   }
 
+  async getMyAssignments() {
+    return this.request('/teachers/me/assignments');
+  }
+
   // Subjects
   async getSubjects() {
     return this.request('/subjects');
@@ -274,6 +278,28 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+  }
+
+  async uploadProfilePhoto(file) {
+    const token = auth.getToken();
+    const form = new FormData();
+    form.append('photo', file);
+    const url = `${API_URL}/profile/photo`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        ...(token && { Authorization: `Bearer ${token}` }),
+        // Do NOT set Content-Type — let browser set multipart boundary
+      },
+      body: form,
+    });
+    const contentType = response.headers.get('content-type') || '';
+    const data = contentType.includes('application/json') ? await response.json() : await response.text();
+    if (!response.ok) {
+      const message = typeof data === 'string' ? `Upload failed (${response.status})` : data?.error || `Upload failed (${response.status})`;
+      throw new ApiError(message, response.status, '/profile/photo', url);
+    }
+    return data;
   }
 }
 

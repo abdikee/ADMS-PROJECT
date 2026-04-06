@@ -112,6 +112,7 @@ const normalizeExamType = (examType) => ({
   id: String(examType.id),
   name: examType.name,
   code: examType.code,
+  weightage: Number(examType.weightage ?? 100),
 });
 
 const normalizeAcademicYear = (academicYear) => ({

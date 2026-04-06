@@ -40,6 +40,7 @@ export function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   useEffect(() => {
     const loadProfile = async () => {
@@ -120,6 +121,27 @@ export function ProfilePage() {
       toast.error(error.message || 'Failed to update profile');
     } finally {
       setSavingProfile(false);
+    }
+  };
+
+  const handlePhotoUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    try {
+      setUploadingPhoto(true);
+      const result = await api.uploadProfilePhoto(file);
+      // Refresh profile to get updated photo URL
+      const updated = await api.getMyProfile();
+      setProfile(updated);
+      setFormData((prev) => ({ ...prev, profilePhoto: updated.profilePhoto || '' }));
+      updateUser({ profilePhoto: updated.profilePhoto });
+      toast.success('Profile photo updated');
+    } catch (error) {
+      toast.error(error.message || 'Failed to upload photo');
+    } finally {
+      setUploadingPhoto(false);
+      // Reset file input
+      event.target.value = '';
     }
   };
 
@@ -322,8 +344,22 @@ export function ProfilePage() {
                     <AvatarFallback className="bg-blue-50 text-xl font-semibold text-blue-700">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
-                    <Label htmlFor="profilePhoto">Photo URL</Label>
-                    <Input id="profilePhoto" placeholder="https://example.com/photo.jpg" value={formData.profilePhoto} onChange={(e) => setFormData((prev) => ({ ...prev, profilePhoto: e.target.value }))} />
+                    <Label>Upload Photo</Label>
+                    <label htmlFor="photoUpload" className="cursor-pointer">
+                      <div className="flex items-center gap-2 rounded-md border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <Camera className="size-4 text-blue-600" />
+                        {uploadingPhoto ? 'Uploading...' : 'Choose image file'}
+                      </div>
+                      <input
+                        id="photoUpload"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        onChange={handlePhotoUpload}
+                        disabled={uploadingPhoto}
+                      />
+                    </label>
+                    <p className="text-xs text-gray-500">JPEG, PNG or WebP · max 5 MB</p>
                   </div>
                 </div>
 
