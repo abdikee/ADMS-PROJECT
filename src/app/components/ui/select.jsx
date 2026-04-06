@@ -11,8 +11,12 @@ export function Select({ value, onValueChange, defaultValue, disabled, children 
   );
 }
 
-export function SelectGroup({ children }) {
-  return <>{children}</>;
+function extractText(node) {
+  if (node === null || node === undefined) return '';
+  if (typeof node === 'string' || typeof node === 'number') return String(node);
+  if (Array.isArray(node)) return node.map(extractText).join('');
+  if (node?.props?.children !== undefined) return extractText(node.props.children);
+  return '';
 }
 
 export function SelectValue({ placeholder }) {
@@ -87,7 +91,7 @@ export function SelectContent({ className, children }) {
       )}
       {options.map((opt) => (
         <option key={opt.value} value={opt.value} disabled={opt.disabled}>
-          {typeof opt.label === 'string' ? opt.label : opt.value}
+          {extractText(opt.label) || String(opt.value)}
         </option>
       ))}
     </select>
