@@ -1,6 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useRef } from 'react';
 import { Navigate } from 'react-router';
-import { Save } from 'lucide-react';
+import { Save, Copy, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useData } from '../contexts/DataContext.jsx';
 import { getTeacherAssignedClassIds } from '../utils/teacherAssignments.js';
@@ -73,6 +73,9 @@ export function MarksPage() {
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
   const [marksByStudentId, setMarksByStudentId] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [bulkMarksValue, setBulkMarksValue] = useState('');
+  const [bulkRemarksValue, setBulkRemarksValue] = useState('');
+  const inputRefs = useRef({});
 
   const selectedSubject = useMemo(
     () => subjects.find((subject) => subject.id === currentTeacher?.subjectId) || null,
@@ -149,6 +152,74 @@ export function MarksPage() {
     }));
   };
 
+  const handleKeyDown = (event, studentId, currentIndex) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const studentIds = classStudents.map(s => s.id);
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < studentIds.length) {
+        const nextStudentId = studentIds[nextIndex];
+        const nextInput = inputRefs.current[`${nextStudentId}-marks`];
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      }
+    }
+  };
+
+  const handleBulkFillMarks = () => {
+    if (!bulkMarksValue.trim()) return;
+    const numericValue = Number(bulkMarksValue);
+    const maxMarks = Number(selectedSubject?.maxMarks || 100);
+    
+    if (Number.isNaN(numericValue) || numericValue < 0 || numericValue > maxMarks) {
+      toast.error(`Invalid marks value. Must be between 0 and ${maxMarks}`);
+      return;
+    }
+
+    setMarksByStudentId((prev) => {
+      const updated = { ...prev };
+      classStudents.forEach((student) => {
+        if (!updated[student.id]) {
+          updated[student.id] = { marksObtained: '', remarks: '', markId: '' };
+        }
+        updated[student.id].marksObtained = String(numericValue);
+      });
+      return updated;
+    });
+    toast.success(`Applied ${numericValue} marks to all students`);
+  };
+
+  const handleBulkFillRemarks = () => {
+    if (!bulkRemarksValue.trim()) return;
+    
+    setMarksByStudentId((prev) => {
+      const updated = { ...prev };
+      classStudents.forEach((student) => {
+        if (!updated[student.id]) {
+          updated[student.id] = { marksObtained: '', remarks: '', markId: '' };
+        }
+        updated[student.id].remarks = bulkRemarksValue;
+      });
+      return updated;
+    });
+    toast.success('Applied remarks to all students');
+  };
+
+  const handleClearAll = () => {
+    setMarksByStudentId((prev) => {
+      const updated = { ...prev };
+      classStudents.forEach((student) => {
+        updated[student.id] = { marksObtained: '', remarks: '', markId: '' };
+      });
+      return updated;
+    });
+    setBulkMarksValue('');
+    setBulkRemarksValue('');
+    toast.success('Cleared all marks');
+  };
+
   const handleSubmit = async () => {
     if (!selectedClassId || !selectedExamTypeId || !selectedAcademicYearId || !selectedSubject) {
       toast.error('Select class, exam type, academic year, and subject first');
@@ -222,16 +293,78 @@ export function MarksPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Marks Entry</h2>
           <p className="mt-1 text-gray-600">Record marks only for your assigned subject and classes.</p>
         </div>
-        <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={submitting}>
-          <Save className="mr-2 h-4 w-4" />
-          {submitting ? 'Saving...' : 'Save Marks'}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleClearAll} disabled={submitting}>
+            Clear All
+          </Button>
+          <Button onClick={handleSubmit} className="bg-blue-600 hover:bg-blue-700" disabled={submitting}>
+            <Save className="mr-2 h-4 w-4" />
+            {submitting ? 'Saving...' : 'Save Marks'}
+          </Button>
+        </div>
       </div>
+
+      {/* Bulk Operations */}
+      <Card className="border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <Copy className="h-5 w-5" />
+            Bulk Operations
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="space-y-2">
+              <Label>Fill All Marks</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  min="0"
+                  max={selectedSubject?.maxMarks || 100}
+                  value={bulkMarksValue}
+                  onChange={(e) => setBulkMarksValue(e.target.value)}
+                  placeholder="Enter marks"
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={handleBulkFillMarks} size="sm">
+                  Apply
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Fill All Remarks</Label>
+              <div className="flex gap-2">
+                <Input
+                  value={bulkRemarksValue}
+                  onChange={(e) => setBulkRemarksValue(e.target.value)}
+                  placeholder="Enter remarks"
+                  className="flex-1"
+                />
+                <Button variant="outline" onClick={handleBulkFillRemarks} size="sm">
+                  Apply
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Max Marks</Label>
+              <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900">
+                {selectedSubject?.maxMarks || 100}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Students Count</Label>
+              <div className="rounded-md border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-medium text-gray-900">
+                {classStudents.length}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <Card className="border-gray-200">
         <CardContent className="grid gap-4 pt-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
@@ -292,7 +425,8 @@ export function MarksPage() {
           <CardTitle className="text-lg font-semibold">Class Marks</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto -mx-4 sm:mx-0">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto -mx-4 sm:mx-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -307,7 +441,7 @@ export function MarksPage() {
               </TableHeader>
               <TableBody>
                 {classStudents.length > 0 ? (
-                  classStudents.map((student) => {
+                  classStudents.map((student, index) => {
                     const rowState = marksByStudentId[student.id] || {};
                     const marksObtained = Number(rowState.marksObtained);
                     const maxMarks = Number(selectedSubject?.maxMarks || 100);
@@ -315,6 +449,7 @@ export function MarksPage() {
                     const grade = hasValue && !Number.isNaN(marksObtained)
                       ? buildGrade(marksObtained, maxMarks)
                       : '-';
+                    const isValid = !hasValue || (!Number.isNaN(marksObtained) && marksObtained >= 0 && marksObtained <= maxMarks);
 
                     return (
                       <TableRow key={student.id}>
@@ -322,26 +457,40 @@ export function MarksPage() {
                         <TableCell>{student.admissionNumber || '-'}</TableCell>
                         <TableCell>{maxMarks}</TableCell>
                         <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max={maxMarks}
-                            value={rowState.marksObtained || ''}
-                            onChange={(event) => handleValueChange(student.id, 'marksObtained', event.target.value)}
-                            placeholder="0"
-                          />
+                          <div className="relative">
+                            <Input
+                              ref={(el) => (inputRefs.current[`${student.id}-marks`] = el)}
+                              type="number"
+                              min="0"
+                              max={maxMarks}
+                              value={rowState.marksObtained || ''}
+                              onChange={(event) => handleValueChange(student.id, 'marksObtained', event.target.value)}
+                              onKeyDown={(event) => handleKeyDown(event, student.id, index)}
+                              placeholder="0"
+                              className={`w-20 ${!isValid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                            />
+                            {!isValid && (
+                              <AlertCircle className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
+                            )}
+                          </div>
                         </TableCell>
-                        <TableCell>{grade}</TableCell>
+                        <TableCell>
+                          <span className={`font-medium ${grade !== '-' ? 'text-green-600' : 'text-gray-400'}`}>
+                            {grade}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           <Input
                             value={rowState.remarks || ''}
                             onChange={(event) => handleValueChange(student.id, 'remarks', event.target.value)}
                             placeholder="Optional remarks"
+                            className="w-32"
                           />
                         </TableCell>
                         <TableCell>
                           {rowState.markId ? (
                             <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                              <CheckCircle className="w-3 h-3 mr-1" />
                               Existing
                             </Badge>
                           ) : (
@@ -362,6 +511,93 @@ export function MarksPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {classStudents.length > 0 ? (
+              classStudents.map((student, index) => {
+                const rowState = marksByStudentId[student.id] || {};
+                const marksObtained = Number(rowState.marksObtained);
+                const maxMarks = Number(selectedSubject?.maxMarks || 100);
+                const hasValue = String(rowState.marksObtained || '').trim() !== '';
+                const grade = hasValue && !Number.isNaN(marksObtained)
+                  ? buildGrade(marksObtained, maxMarks)
+                  : '-';
+                const isValid = !hasValue || (!Number.isNaN(marksObtained) && marksObtained >= 0 && marksObtained <= maxMarks);
+
+                return (
+                  <Card key={student.id} className="border-gray-200">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <h4 className="font-medium text-gray-900">{student.firstName} {student.lastName}</h4>
+                          <p className="text-sm text-gray-500">Admission: {student.admissionNumber || '-'}</p>
+                        </div>
+                        {rowState.markId ? (
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            <CheckCircle className="w-3 h-3 mr-1" />
+                            Existing
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                            New
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label className="text-xs text-gray-600">Max Marks</Label>
+                          <div className="text-sm font-medium">{maxMarks}</div>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-gray-600">Grade</Label>
+                          <div className={`text-sm font-medium ${grade !== '-' ? 'text-green-600' : 'text-gray-400'}`}>
+                            {grade}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="mt-4 space-y-3">
+                        <div>
+                          <Label className="text-sm">Marks Obtained</Label>
+                          <div className="relative mt-1">
+                            <Input
+                              ref={(el) => (inputRefs.current[`${student.id}-marks`] = el)}
+                              type="number"
+                              min="0"
+                              max={maxMarks}
+                              value={rowState.marksObtained || ''}
+                              onChange={(event) => handleValueChange(student.id, 'marksObtained', event.target.value)}
+                              onKeyDown={(event) => handleKeyDown(event, student.id, index)}
+                              placeholder="0"
+                              className={`w-full ${!isValid ? 'border-red-500 focus-visible:ring-red-500' : ''}`}
+                            />
+                            {!isValid && (
+                              <AlertCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-red-500" />
+                            )}
+                          </div>
+                        </div>
+                        <div>
+                          <Label className="text-sm">Remarks</Label>
+                          <Input
+                            value={rowState.remarks || ''}
+                            onChange={(event) => handleValueChange(student.id, 'remarks', event.target.value)}
+                            placeholder="Optional remarks"
+                            className="w-full mt-1"
+                          />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                No students are available for the selected class.
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
