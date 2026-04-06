@@ -4,8 +4,8 @@ async function getTeacherAssignments(teacherId) {
   const [assignments] = await pool.query(
     `SELECT teacher_id, subject_id, class_id, academic_year_id
      FROM teacher_subjects
-     WHERE teacher_id = ?`,
-    [teacherId]
+     WHERE teacher_id = $1`,
+    [Number(teacherId)]
   );
 
   return assignments;
@@ -63,15 +63,18 @@ export const getMarks = async (req, res) => {
 
     const params = [];
     const filters = [];
+    let paramIndex = 1;
 
     if (studentId) {
-      filters.push('m.student_id = ?');
-      params.push(studentId);
+      filters.push(`m.student_id = $${paramIndex}`);
+      params.push(Number(studentId));
+      paramIndex++;
     }
 
     if (req.user.role === 'student' && req.user.studentId) {
-      filters.push('m.student_id = ?');
-      params.push(req.user.studentId);
+      filters.push(`m.student_id = $${paramIndex}`);
+      params.push(Number(req.user.studentId));
+      paramIndex++;
     }
 
     if (req.user.role === 'teacher' && req.user.teacherId) {
@@ -79,12 +82,13 @@ export const getMarks = async (req, res) => {
         `EXISTS (
           SELECT 1
           FROM teacher_subjects ts
-          WHERE ts.teacher_id = ?
+          WHERE ts.teacher_id = $${paramIndex}
             AND ts.subject_id = m.subject_id
             AND ts.class_id = m.class_id
         )`
       );
-      params.push(req.user.teacherId);
+      params.push(Number(req.user.teacherId));
+      paramIndex++;
     }
 
     if (filters.length > 0) {
@@ -141,19 +145,40 @@ export const createMarks = async (req, res) => {
         examDate
       } = mark;
 
+      // Ensure proper data types
+      const studentIdNum = Number(studentId);
+      const subjectIdNum = Number(subjectId);
+      const classIdNum = Number(classId);
+      const examTypeIdNum = Number(examTypeId);
+      const academicYearIdNum = academicYearId ? Number(academicYearId) : null;
+      const marksObtainedNum = Number(marksObtained);
+      const maxMarksNum = Number(maxMarks);
+
       if (
-        studentId === undefined ||
-        subjectId === undefined ||
-        classId === undefined ||
-        examTypeId === undefined ||
-        marksObtained === undefined ||
-        maxMarks === undefined
+        isNaN(studentIdNum) ||
+        isNaN(subjectIdNum) ||
+        isNaN(classIdNum) ||
+        isNaN(examTypeIdNum) ||
+        isNaN(marksObtainedNum) ||
+        isNaN(maxMarksNum)
+      ) {
+        await connection.rollback();
+        return res.status(400).json({ error: 'Invalid numeric values provided' });
+      }
+
+      if (
+        studentIdNum === undefined ||
+        subjectIdNum === undefined ||
+        classIdNum === undefined ||
+        examTypeIdNum === undefined ||
+        marksObtainedNum === undefined ||
+        maxMarksNum === undefined
       ) {
         await connection.rollback();
         return res.status(400).json({ error: 'Missing required fields for marks entry' });
       }
 
-      if (!isAssignmentAllowed(teacherAssignments, subjectId, classId)) {
+      if (!isAssignmentAllowed(teacherAssignments, subjectIdNum, classIdNum)) {
         await connection.rollback();
         return res.status(403).json({ error: 'Teachers can only add marks for their assigned subject and class' });
       }
@@ -161,12 +186,12 @@ export const createMarks = async (req, res) => {
       const [duplicates] = await connection.query(
         `SELECT id
          FROM marks
-         WHERE student_id = ?
-           AND subject_id = ?
-           AND class_id = ?
-           AND exam_type_id = ?
-           AND ((academic_year_id IS NULL AND ? IS NULL) OR academic_year_id = ?)`,
-        [studentId, subjectId, classId, examTypeId, academicYearId ?? null, academicYearId ?? null]
+         WHERE student_id = $1
+           AND subject_id = $2
+           AND class_id = $3
+           AND exam_type_id = $4
+           AND ((academic_year_id IS NULL AND $5 IS NULL) OR academic_year_id = $5)`,
+        [studentIdNum, subjectIdNum, classIdNum, examTypeIdNum, academicYearIdNum]
       );
 
       if (duplicates.length > 0) {
@@ -177,8 +202,8 @@ export const createMarks = async (req, res) => {
       const [result] = await connection.query(
         `INSERT INTO marks 
          (student_id, subject_id, class_id, exam_type_id, academic_year_id, marks_obtained, max_marks, grade, remarks, teacher_id, exam_date) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [studentId, subjectId, classId, examTypeId, academicYearId || null, marksObtained, maxMarks, grade || null, remarks || null, req.user.teacherId, examDate || null]
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [studentIdNum, subjectIdNum, classIdNum, examTypeIdNum, academicYearIdNum, marksObtainedNum, maxMarksNum, grade || null, remarks || null, req.user.teacherId, examDate || null]
       );
 
       markIds.push(result.insertId);
@@ -222,9 +247,14 @@ export const updateMark = async (req, res) => {
       marks
     } = req.body;
 
+    const markIdNum = Number(id);
+    if (isNaN(markIdNum)) {
+      return res.status(400).json({ error: 'Invalid mark ID' });
+    }
+
     const [existingMarks] = await pool.query(
-      'SELECT subject_id, class_id, academic_year_id FROM marks WHERE id = ?',
-      [id]
+      'SELECT subject_id, class_id, academic_year_id FROM marks WHERE id = $1',
+      [markIdNum]
     );
 
     if (existingMarks.length === 0) {
@@ -236,70 +266,82 @@ export const updateMark = async (req, res) => {
 
     if (!isAssignmentAllowed(
       teacherAssignments,
-      subjectId ?? existingMark.subject_id,
-      classId ?? existingMark.class_id
+      subjectId ? Number(subjectId) : existingMark.subject_id,
+      classId ? Number(classId) : existingMark.class_id
     )) {
       return res.status(403).json({ error: 'Teachers can only modify marks for their assigned subject and class' });
     }
 
     const fields = [];
     const values = [];
+    let paramIndex = 1;
 
     if (studentId !== undefined) {
-      fields.push('student_id = ?');
-      values.push(studentId);
+      fields.push(`student_id = $${paramIndex}`);
+      values.push(Number(studentId));
+      paramIndex++;
     }
     if (subjectId !== undefined) {
-      fields.push('subject_id = ?');
-      values.push(subjectId);
+      fields.push(`subject_id = $${paramIndex}`);
+      values.push(Number(subjectId));
+      paramIndex++;
     }
     if (classId !== undefined) {
-      fields.push('class_id = ?');
-      values.push(classId);
+      fields.push(`class_id = $${paramIndex}`);
+      values.push(Number(classId));
+      paramIndex++;
     }
     if (examTypeId !== undefined) {
-      fields.push('exam_type_id = ?');
-      values.push(examTypeId);
+      fields.push(`exam_type_id = $${paramIndex}`);
+      values.push(Number(examTypeId));
+      paramIndex++;
     }
     if (academicYearId !== undefined) {
-      fields.push('academic_year_id = ?');
-      values.push(academicYearId);
+      fields.push(`academic_year_id = $${paramIndex}`);
+      values.push(academicYearId ? Number(academicYearId) : null);
+      paramIndex++;
     }
     if (marksObtained !== undefined || marks !== undefined) {
-      fields.push('marks_obtained = ?');
-      values.push(marksObtained ?? marks);
+      fields.push(`marks_obtained = $${paramIndex}`);
+      values.push(Number(marksObtained ?? marks));
+      paramIndex++;
     }
     if (maxMarks !== undefined) {
-      fields.push('max_marks = ?');
-      values.push(maxMarks);
+      fields.push(`max_marks = $${paramIndex}`);
+      values.push(Number(maxMarks));
+      paramIndex++;
     }
     if (grade !== undefined) {
-      fields.push('grade = ?');
+      fields.push(`grade = $${paramIndex}`);
       values.push(grade);
+      paramIndex++;
     }
     if (remarks !== undefined) {
-      fields.push('remarks = ?');
+      fields.push(`remarks = $${paramIndex}`);
       values.push(remarks);
+      paramIndex++;
     }
-    fields.push('teacher_id = ?');
-    values.push(req.user.teacherId);
+    fields.push(`teacher_id = $${paramIndex}`);
+    values.push(Number(req.user.teacherId));
+    paramIndex++;
     if (examDate !== undefined) {
-      fields.push('exam_date = ?');
+      fields.push(`exam_date = $${paramIndex}`);
       values.push(examDate);
+      paramIndex++;
     }
 
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
 
-    values.push(id);
+    values.push(markIdNum);
 
     await pool.query(
-      `UPDATE marks SET ${fields.join(', ')} WHERE id = ?`,
+      `UPDATE marks SET ${fields.join(', ')} WHERE id = $${paramIndex}`,
       values
     );
 
-    res.json({ message: 'Marks updated successfully' });
+    res.json({ message: 'Mark updated successfully' });
 
   } catch (error) {
     console.error('Error updating marks:', error);

@@ -257,11 +257,11 @@ export function MarksPage() {
       entries.forEach(({ student, values }) => {
         const marksObtained = Number(values.marksObtained);
         const payload = {
-          studentId: student.id,
-          subjectId: selectedSubject.id,
-          classId: selectedClassId,
-          examTypeId: selectedExamTypeId,
-          academicYearId: selectedAcademicYearId,
+          studentId: Number(student.id),
+          subjectId: Number(selectedSubject.id),
+          classId: Number(selectedClassId),
+          examTypeId: Number(selectedExamTypeId),
+          academicYearId: selectedAcademicYearId ? Number(selectedAcademicYearId) : null,
           marksObtained,
           maxMarks: Number(selectedSubject.maxMarks || 100),
           grade: buildGrade(marksObtained, selectedSubject.maxMarks || 100),
@@ -269,7 +269,7 @@ export function MarksPage() {
         };
 
         if (values.markId) {
-          updatePayload.push({ id: values.markId, payload });
+          updatePayload.push({ id: Number(values.markId), payload });
         } else {
           createPayload.push(payload);
         }
