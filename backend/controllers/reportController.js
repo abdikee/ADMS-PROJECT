@@ -1,12 +1,15 @@
 import pool from '../config/database.js';
 
-async function teacherCanAccessClass(teacherId, classId) {
-  const [assignments] = await pool.query(
-    'SELECT id FROM teacher_subjects WHERE teacher_id = ? AND class_id = ? LIMIT 1',
-    [teacherId, classId]
-  );
+const EXAM_WEIGHTS = { MIDTERM: 30, FINAL: 50, QUIZ: 10, ASSIGNMENT: 10 };
 
-  return assignments.length > 0;
+function computeWeightedTotal(marksByCategory, subjectMaxMarks) {
+  let total = 0;
+  for (const [code, weightage] of Object.entries(EXAM_WEIGHTS)) {
+    const scaledMax = subjectMaxMarks * (weightage / 100);
+    const obtained = marksByCategory[code] ?? 0;
+    total += scaledMax > 0 ? (obtained / scaledMax) * weightage : 0;
+  }
+  return parseFloat(total.toFixed(2));
 }
 
 export const getStudentReport = async (req, res) => {
@@ -49,9 +52,11 @@ export const getStudentReport = async (req, res) => {
     const student = students[0];
 
     if (req.user.role === 'teacher' && req.user.teacherId) {
-      const allowed = student.class_id
-        ? await teacherCanAccessClass(req.user.teacherId, student.class_id)
-        : false;
+      const [assignments] = await pool.query(
+        'SELECT id FROM teacher_subjects WHERE teacher_id = ? AND class_id = ? LIMIT 1',
+        [req.user.teacherId, student.class_id]
+      );
+      const allowed = student.class_id ? assignments.length > 0 : false;
 
       if (!allowed) {
         return res.status(403).json({ error: 'Teachers can only view reports for their assigned classes' });
@@ -159,13 +164,6 @@ export const getClassReport = async (req, res) => {
       return res.status(403).json({ error: 'Students cannot access class reports' });
     }
 
-    if (req.user.role === 'teacher' && req.user.teacherId) {
-      const allowed = await teacherCanAccessClass(req.user.teacherId, classId);
-      if (!allowed) {
-        return res.status(403).json({ error: 'Teachers can only view reports for their assigned classes' });
-      }
-    }
-
     const [classes] = await pool.query(`
       SELECT
         c.id,
@@ -233,29 +231,85 @@ export const getClassReport = async (req, res) => {
       params.push(req.user.teacherId);
     }
 
-    studentsQuery += ' GROUP BY s.id ORDER BY average_percentage DESC, s.first_name, s.last_name';
+    studentsQuery += ' GROUP BY s.id ORDER BY s.first_name, s.last_name';
 
     const [students] = await pool.query(studentsQuery, params);
 
-    let currentRank = 0;
-    let previousAverage = null;
+    // Fetch all marks for the class to compute weighted totals
+    let marksQuery = `
+      SELECT m.student_id, m.subject_id, sub.max_marks as subject_max_marks,
+             et.code as exam_type_code, m.marks_obtained
+      FROM marks m
+      JOIN subjects sub ON m.subject_id = sub.id
+      JOIN exam_types et ON m.exam_type_id = et.id
+      WHERE m.class_id = ?
+    `;
 
-    const studentsWithRank = students.map((student, index) => {
+    const marksParams = [classId];
+
+    if (academicYearId) {
+      marksQuery += ' AND m.academic_year_id = ?';
+      marksParams.push(academicYearId);
+    }
+
+    const [allMarks] = await pool.query(marksQuery, marksParams);
+
+    // Group marks by student_id → subject_id → exam_type_code
+    const marksByStudent = {};
+    for (const row of allMarks) {
+      const { student_id, subject_id, subject_max_marks, exam_type_code, marks_obtained } = row;
+      if (!marksByStudent[student_id]) marksByStudent[student_id] = {};
+      if (!marksByStudent[student_id][subject_id]) {
+        marksByStudent[student_id][subject_id] = { maxMarks: subject_max_marks, byCategory: {} };
+      }
+      marksByStudent[student_id][subject_id].byCategory[exam_type_code] =
+        (marksByStudent[student_id][subject_id].byCategory[exam_type_code] ?? 0) + (parseFloat(marks_obtained) || 0);
+    }
+
+    // Compute weightedTotal per student (average across subjects)
+    const weightedTotals = {};
+    for (const student of students) {
+      const subjectMap = marksByStudent[student.id];
+      if (!subjectMap || Object.keys(subjectMap).length === 0) {
+        weightedTotals[student.id] = 0;
+      } else {
+        const subjectScores = Object.values(subjectMap).map(({ maxMarks, byCategory }) =>
+          computeWeightedTotal(byCategory, maxMarks)
+        );
+        weightedTotals[student.id] = parseFloat(
+          (subjectScores.reduce((a, b) => a + b, 0) / subjectScores.length).toFixed(2)
+        );
+      }
+    }
+
+    // Sort by weightedTotal descending
+    const sortedStudents = [...students].sort((a, b) => {
+      const diff = weightedTotals[b.id] - weightedTotals[a.id];
+      if (diff !== 0) return diff;
+      return a.first_name.localeCompare(b.first_name);
+    });
+
+    let currentRank = 0;
+    let previousWeighted = null;
+
+    const studentsWithRank = sortedStudents.map((student, index) => {
+      const weightedTotal = weightedTotals[student.id];
       const avg = parseFloat(student.average_percentage) || 0;
 
-      if (previousAverage !== avg) {
+      if (previousWeighted !== weightedTotal) {
         currentRank = index + 1;
       }
 
-      previousAverage = avg;
+      previousWeighted = weightedTotal;
 
       return {
         ...student,
         total_marks: parseFloat(student.total_marks) || 0,
         total_max_marks: parseFloat(student.total_max_marks) || 0,
         average_percentage: avg,
+        weightedTotal,
         rank: currentRank,
-        status: avg >= 40 ? 'PASS' : 'FAIL'
+        status: weightedTotal >= 40 ? 'PASS' : 'FAIL'
       };
     });
 
@@ -265,7 +319,7 @@ export const getClassReport = async (req, res) => {
       passCount: studentsWithRank.filter((student) => student.status === 'PASS').length,
       failCount: studentsWithRank.filter((student) => student.status === 'FAIL').length,
       classAverage: students.length > 0
-        ? parseFloat((studentsWithRank.reduce((sum, student) => sum + student.average_percentage, 0) / students.length).toFixed(2))
+        ? parseFloat((studentsWithRank.reduce((sum, student) => sum + student.weightedTotal, 0) / students.length).toFixed(2))
         : 0
     };
 

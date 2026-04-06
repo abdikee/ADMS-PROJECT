@@ -151,6 +151,39 @@ const teacherSelect = `
   LEFT JOIN classes home ON home.homeroom_teacher_id = t.id
 `;
 
+export const getMyAssignments = async (req, res) => {
+  try {
+    const { teacherId } = req.user;
+
+    if (!teacherId) {
+      return res.status(403).json({ error: 'Access denied: no teacher profile associated with this account' });
+    }
+
+    const [assignments] = await pool.query(
+      `SELECT ts.id as teacher_subject_id, ts.subject_id, sub.name as subject_name, sub.max_marks as subject_max_marks,
+              ts.class_id, cls.name as class_name, ts.academic_year_id
+       FROM teacher_subjects ts
+       JOIN subjects sub ON ts.subject_id = sub.id
+       JOIN classes cls ON ts.class_id = cls.id
+       WHERE ts.teacher_id = ?`,
+      [teacherId]
+    );
+
+    res.json(assignments.map((row) => ({
+      teacherSubjectId: row.teacher_subject_id,
+      subjectId: row.subject_id,
+      subjectName: row.subject_name,
+      subjectMaxMarks: row.subject_max_marks,
+      classId: row.class_id,
+      className: row.class_name,
+      academicYearId: row.academic_year_id,
+    })));
+  } catch (error) {
+    console.error('Error fetching teacher assignments:', error);
+    res.status(500).json({ error: 'Failed to fetch assignments' });
+  }
+};
+
 export const getAllTeachers = async (req, res) => {
   try {
     const [teachers] = await pool.query(`

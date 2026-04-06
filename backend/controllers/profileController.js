@@ -1,5 +1,7 @@
 import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
+import multer from 'multer';
+import { env } from '../config/env.js';
 
 let ensureUserProfilesTablePromise;
 
@@ -393,4 +395,91 @@ export const changeMyPassword = async (req, res) => {
     console.error('Error changing password:', error);
     res.status(500).json({ error: error.message || 'Failed to change password' });
   }
+};
+
+const storage = multer.memoryStorage();
+
+export const uploadMiddleware = multer({
+  storage,
+  fileFilter: (_req, file, cb) => {
+    const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only JPEG, PNG, and WebP images are accepted'), false);
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single('photo');
+
+function extFromMimetype(mimetype) {
+  if (mimetype === 'image/jpeg') return 'jpg';
+  if (mimetype === 'image/png') return 'png';
+  if (mimetype === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
+export const uploadProfilePhoto = async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No file uploaded' });
+  }
+
+  const { SUPABASE_URL, SUPABASE_SERVICE_KEY } = env;
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    return res.status(500).json({ error: 'Storage not configured' });
+  }
+
+  const ext = extFromMimetype(req.file.mimetype);
+  const filename = `${req.user.id}-${Date.now()}.${ext}`;
+
+  const uploadResponse = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/profile-photos/${filename}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        'Content-Type': req.file.mimetype,
+        'x-upsert': 'true',
+      },
+      body: req.file.buffer,
+    }
+  );
+
+  if (!uploadResponse.ok) {
+    const text = await uploadResponse.text();
+    console.error('Supabase upload error:', text);
+    return res.status(500).json({ error: 'Failed to upload photo to storage' });
+  }
+
+  const photoUrl = `${SUPABASE_URL}/storage/v1/object/public/profile-photos/${filename}`;
+
+  try {
+    if (req.user.role === 'teacher') {
+      await pool.query(
+        'UPDATE teachers SET profile_photo = ? WHERE user_id = ?',
+        [photoUrl, req.user.id]
+      );
+    } else if (req.user.role === 'student') {
+      await pool.query(
+        'UPDATE students SET profile_photo = ? WHERE user_id = ?',
+        [photoUrl, req.user.id]
+      );
+    } else if (req.user.role === 'admin') {
+      await ensureUserProfilesTable();
+      await pool.query(
+        `INSERT INTO user_profiles (user_id, profile_photo)
+         VALUES (?, ?)
+         ON CONFLICT (user_id) DO UPDATE SET
+           profile_photo = EXCLUDED.profile_photo,
+           updated_at = CURRENT_TIMESTAMP`,
+        [req.user.id, photoUrl]
+      );
+    }
+  } catch (error) {
+    console.error('Error persisting photo URL:', error);
+    return res.status(500).json({ error: 'Failed to save photo URL' });
+  }
+
+  return res.json({ photoUrl });
 };

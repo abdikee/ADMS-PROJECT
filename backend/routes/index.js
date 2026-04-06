@@ -14,7 +14,8 @@ import {
   createTeacher,
   updateTeacher,
   deleteTeacher,
-  generateCredentials as generateTeacherCredentials
+  generateCredentials as generateTeacherCredentials,
+  getMyAssignments
 } from '../controllers/teacherController.js';
 import {
   getAllSubjects,
@@ -39,7 +40,9 @@ import {
 import {
   getMyProfile,
   updateMyProfile,
-  changeMyPassword
+  changeMyPassword,
+  uploadProfilePhoto,
+  uploadMiddleware
 } from '../controllers/profileController.js';
 import {
   getAllClasses,
@@ -54,6 +57,14 @@ import {
   getAcademicYears
 } from '../controllers/referenceController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { checkTeacherSubjectAccess, checkHomeroomAccess } from '../middleware/teacherAccess.js';
+
+const homeroomGuard = (req, res, next) => {
+  if (req.user?.role === 'teacher') {
+    return checkHomeroomAccess(req, res, next);
+  }
+  next();
+};
 
 const router = express.Router();
 
@@ -65,6 +76,20 @@ router.post('/auth/register', register);
 router.get('/profile/me', authenticate, getMyProfile);
 router.put('/profile/me', authenticate, updateMyProfile);
 router.post('/profile/me/change-password', authenticate, changeMyPassword);
+router.post('/profile/photo', authenticate, (req, res, next) => {
+  uploadMiddleware(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'File size must not exceed 5 MB' });
+      }
+      if (err.message && err.message.includes('Only JPEG')) {
+        return res.status(400).json({ error: err.message });
+      }
+      return res.status(400).json({ error: err.message || 'Upload error' });
+    }
+    next();
+  });
+}, uploadProfilePhoto);
 
 // Student routes
 router.get('/students', authenticate, getAllStudents);
@@ -76,6 +101,7 @@ router.post('/students/:id/generate-credentials', authenticate, authorize('admin
 
 // Teacher routes
 router.get('/teachers', authenticate, getAllTeachers);
+router.get('/teachers/me/assignments', authenticate, authorize('teacher'), getMyAssignments);
 router.get('/teachers/:id', authenticate, getTeacherById);
 router.post('/teachers', authenticate, authorize('admin'), createTeacher);
 router.put('/teachers/:id', authenticate, authorize('admin'), updateTeacher);
@@ -91,12 +117,12 @@ router.delete('/subjects/:id', authenticate, authorize('admin'), deleteSubject);
 
 // Marks routes
 router.get('/marks', authenticate, getMarks);
-router.post('/marks', authenticate, authorize('teacher'), createMarks);
-router.put('/marks/:id', authenticate, authorize('teacher'), updateMark);
+router.post('/marks', authenticate, authorize('teacher'), checkTeacherSubjectAccess, createMarks);
+router.put('/marks/:id', authenticate, authorize('teacher'), checkTeacherSubjectAccess, updateMark);
 
 // Report routes
 router.get('/reports/student/:id', authenticate, getStudentReport);
-router.get('/reports/class', authenticate, getClassReport);
+router.get('/reports/class', authenticate, homeroomGuard, getClassReport);
 
 // Student course registration routes
 router.get('/course-registrations/me', authenticate, authorize('student'), getMyCourseRegistrations);

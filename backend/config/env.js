@@ -49,6 +49,8 @@ const jwtSecret = readEnvValue('JWT_SECRET');
 const corsOrigins = parseCorsOrigins(readEnvValue('CORS_ORIGIN'));
 const nodeEnv = readEnvValue('NODE_ENV');
 const port = readEnvValue('PORT') || '5000';
+const supabaseUrl = readEnvValue('SUPABASE_URL');
+const supabaseServiceKey = readEnvValue('SUPABASE_SERVICE_KEY');
 
 if (jwtSecret.length < 32) {
   throw new Error('JWT_SECRET must be at least 32 characters long');
@@ -69,4 +71,6 @@ export const env = {
   CORS_ORIGIN: corsOrigins,
   NODE_ENV: nodeEnv,
   PORT: port,
+  SUPABASE_URL: supabaseUrl,
+  SUPABASE_SERVICE_KEY: supabaseServiceKey,
 };
