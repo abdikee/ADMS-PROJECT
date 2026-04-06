@@ -11,16 +11,10 @@ async function getTeacherAssignments(teacherId) {
   return assignments;
 }
 
-function isAssignmentAllowed(assignments, subjectId, classId, academicYearId) {
+function isAssignmentAllowed(assignments, subjectId, classId) {
   return assignments.some((assignment) => (
     Number(assignment.subject_id) === Number(subjectId) &&
-    Number(assignment.class_id) === Number(classId) &&
-    (
-      academicYearId === undefined ||
-      academicYearId === null ||
-      assignment.academic_year_id === null ||
-      Number(assignment.academic_year_id) === Number(academicYearId)
-    )
+    Number(assignment.class_id) === Number(classId)
   ));
 }
 
@@ -159,7 +153,7 @@ export const createMarks = async (req, res) => {
         return res.status(400).json({ error: 'Missing required fields for marks entry' });
       }
 
-      if (!isAssignmentAllowed(teacherAssignments, subjectId, classId, academicYearId)) {
+      if (!isAssignmentAllowed(teacherAssignments, subjectId, classId)) {
         await connection.rollback();
         return res.status(403).json({ error: 'Teachers can only add marks for their assigned subject and class' });
       }
@@ -243,8 +237,7 @@ export const updateMark = async (req, res) => {
     if (!isAssignmentAllowed(
       teacherAssignments,
       subjectId ?? existingMark.subject_id,
-      classId ?? existingMark.class_id,
-      academicYearId ?? existingMark.academic_year_id
+      classId ?? existingMark.class_id
     )) {
       return res.status(403).json({ error: 'Teachers can only modify marks for their assigned subject and class' });
     }

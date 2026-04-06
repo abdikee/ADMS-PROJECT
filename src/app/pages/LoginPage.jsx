@@ -88,7 +88,7 @@ export function LoginPage() {
             {/* Username */}
             <div className="space-y-1.5">
               <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                Username <span className="text-gray-400 font-normal">(Student ID / Staff ID)</span>
+                Username
               </label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
@@ -149,17 +149,6 @@ export function LoginPage() {
                   <AlertCircle className="w-3 h-3" /> {fieldErrors.password}
                 </p>
               )}
-            </div>
-
-            {/* Forgot password */}
-            <div className="text-right -mt-2">
-              <button
-                type="button"
-                onClick={() => alert('Please contact your school administration to reset your password.')}
-                className="text-xs text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:underline"
-              >
-                Forgot password?
-              </button>
             </div>
 
             {/* Submit */}
