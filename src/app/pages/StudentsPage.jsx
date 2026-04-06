@@ -356,7 +356,7 @@ export function StudentsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
+                          <SelectItem key={cls.id} value={String(cls.id)}>
                             {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
                           </SelectItem>
                         ))}
@@ -445,7 +445,7 @@ export function StudentsPage() {
                       </SelectTrigger>
                       <SelectContent>
                         {classes.map((cls) => (
-                          <SelectItem key={cls.id} value={cls.id}>
+                          <SelectItem key={cls.id} value={String(cls.id)}>
                             {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
                           </SelectItem>
                         ))}

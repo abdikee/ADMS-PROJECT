@@ -285,7 +285,7 @@ export function ClassesPage() {
                 <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">No homeroom teacher</SelectItem>
                   {teachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
+                    <SelectItem key={teacher.id} value={String(teacher.id)}>
                       {teacher.firstName} {teacher.lastName}
                     </SelectItem>
                   ))}
@@ -359,7 +359,7 @@ export function ClassesPage() {
                 <SelectContent className="max-h-48 overflow-y-auto">
                   <SelectItem value="none">No homeroom teacher</SelectItem>
                   {teachers.map((teacher) => (
-                    <SelectItem key={teacher.id} value={teacher.id}>
+                    <SelectItem key={teacher.id} value={String(teacher.id)}>
                       {teacher.firstName} {teacher.lastName}
                     </SelectItem>
                   ))}

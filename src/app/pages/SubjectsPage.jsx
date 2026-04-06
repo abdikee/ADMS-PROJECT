@@ -285,7 +285,7 @@ export function SubjectsPage() {
                   <SelectContent>
                     <SelectItem value="none">No department</SelectItem>
                     {departments.map((department) => (
-                      <SelectItem key={department.id} value={department.id}>
+                      <SelectItem key={department.id} value={String(department.id)}>
                         {department.name}{department.code ? ` (${department.code})` : ''}
                       </SelectItem>
                     ))}
@@ -344,7 +344,7 @@ export function SubjectsPage() {
                   <SelectContent>
                     <SelectItem value="none">No department</SelectItem>
                     {departments.map((department) => (
-                      <SelectItem key={department.id} value={department.id}>
+                      <SelectItem key={department.id} value={String(department.id)}>
                         {department.name}{department.code ? ` (${department.code})` : ''}
                       </SelectItem>
                     ))}

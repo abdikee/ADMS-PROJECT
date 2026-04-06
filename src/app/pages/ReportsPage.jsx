@@ -409,7 +409,7 @@ export function ReportsPage() {
                 <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
                 <SelectContent>
                   {availableClasses.map((classItem) => (
-                    <SelectItem key={classItem.id} value={classItem.id}>
+                    <SelectItem key={classItem.id} value={String(classItem.id)}>
                       {classItem.name} - Grade {classItem.grade}{classItem.section ? ` (${classItem.section})` : ''}
                     </SelectItem>
                   ))}
@@ -454,7 +454,7 @@ export function ReportsPage() {
                 <SelectTrigger><SelectValue placeholder="Select student" /></SelectTrigger>
                 <SelectContent>
                   {classReports.map((report) => (
-                    <SelectItem key={report.student.id} value={report.student.id}>
+                    <SelectItem key={report.student.id} value={String(report.student.id)}>
                       {getStudentName(report.student)}
                     </SelectItem>
                   ))}

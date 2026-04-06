@@ -246,7 +246,7 @@ export function TeachersPage() {
         </SelectTrigger>
         <SelectContent className="max-h-48 overflow-y-auto">
           {subjects.map((subject) => (
-            <SelectItem key={subject.id} value={subject.id}>
+            <SelectItem key={subject.id} value={String(subject.id)}>
               {subject.name}
             </SelectItem>
           ))}
@@ -427,7 +427,7 @@ export function TeachersPage() {
                     No homeroom assignment
                   </SelectItem>
                   {homeroomOptions.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
+                    <SelectItem key={cls.id} value={String(cls.id)}>
                       {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
                     </SelectItem>
                   ))}
@@ -523,7 +523,7 @@ export function TeachersPage() {
                     No homeroom assignment
                   </SelectItem>
                   {homeroomOptions.map((cls) => (
-                    <SelectItem key={cls.id} value={cls.id}>
+                    <SelectItem key={cls.id} value={String(cls.id)}>
                       {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
                     </SelectItem>
                   ))}

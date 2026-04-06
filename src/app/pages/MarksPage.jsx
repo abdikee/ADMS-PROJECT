@@ -251,7 +251,7 @@ export function MarksPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {availableClasses.map((classItem) => (
-                    <SelectItem key={classItem.id} value={classItem.id}>
+                    <SelectItem key={classItem.id} value={String(classItem.id)}>
                       {classItem.name} - Grade {classItem.grade}{classItem.section ? ` (${classItem.section})` : ''}
                     </SelectItem>
                   ))}
@@ -266,7 +266,7 @@ export function MarksPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {examTypes.map((examType) => (
-                    <SelectItem key={examType.id} value={examType.id}>{examType.name}</SelectItem>
+                    <SelectItem key={examType.id} value={String(examType.id)}>{examType.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -279,7 +279,7 @@ export function MarksPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {academicYears.map((academicYear) => (
-                    <SelectItem key={academicYear.id} value={academicYear.id}>
+                    <SelectItem key={academicYear.id} value={String(academicYear.id)}>
                       {academicYear.year} - {academicYear.semester}
                     </SelectItem>
                   ))}
