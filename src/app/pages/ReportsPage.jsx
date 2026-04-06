@@ -297,10 +297,12 @@ export function ReportsPage() {
 
     try {
       setExportingPdf(true);
-      const [{ default: html2canvas }, { jsPDF }] = await Promise.all([
+      const [{ default: html2canvas }, jspdfModule] = await Promise.all([
         import('html2canvas'),
         import('jspdf'),
       ]);
+      // jsPDF v4 uses default export; v2/v3 uses named export
+      const jsPDF = jspdfModule.jsPDF ?? jspdfModule.default?.jsPDF ?? jspdfModule.default;
 
       const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
       const pageWidth = pdf.internal.pageSize.getWidth();
@@ -312,8 +314,14 @@ export function ReportsPage() {
       for (let index = 0; index < reportCardElements.length; index += 1) {
         const element = reportCardElements[index];
         const canvas = await html2canvas(element, {
-          scale: 2, useCORS: true, backgroundColor: '#ffffff',
-          windowWidth: element.scrollWidth, windowHeight: element.scrollHeight,
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          scrollX: 0,
+          scrollY: 0,
+          width: element.scrollWidth,
+          height: element.scrollHeight,
         });
 
         const imageData = canvas.toDataURL('image/png');

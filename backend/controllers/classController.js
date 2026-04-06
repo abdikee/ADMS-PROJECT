@@ -183,6 +183,10 @@ export const createClass = async (req, res) => {
       maxStudents
     } = req.body;
 
+    if (!name || /^\d+$/.test(String(name).trim())) {
+      return res.status(400).json({ error: 'Class name cannot be a number only. Use a format like "Grade 10A"' });
+    }
+
     const academicYearId = await resolveAcademicYearId(connection, req.body);
 
     const [result] = await connection.query(
@@ -210,6 +214,11 @@ export const updateClass = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
+
+    if (updates.name !== undefined && /^\d+$/.test(String(updates.name).trim())) {
+      return res.status(400).json({ error: 'Class name cannot be a number only. Use a format like "Grade 10A"' });
+    }
+
     const fieldMap = {
       name: 'name',
       grade: 'grade',

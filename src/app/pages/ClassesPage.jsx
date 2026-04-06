@@ -74,6 +74,11 @@ export function ClassesPage() {
       return false;
     }
 
+    if (/^\d+$/.test(formData.name.trim())) {
+      toast.error('Class name cannot be a number only. Use a format like "Grade 10A"');
+      return false;
+    }
+
     return true;
   };
 
