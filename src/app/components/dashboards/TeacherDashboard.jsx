@@ -382,11 +382,11 @@ export function TeacherDashboard() {
 
           {/* Quick Marks Entry */}
           <Card className="border-gray-200">
-            <CardHeader className="flex flex-row items-center justify-between flex-wrap gap-2">
+            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-lg font-semibold">Quick Marks Entry</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <Select value={activeClassId || ""} onValueChange={setSelectedClassId}>
-                  <SelectTrigger className="w-[180px]">
+                  <SelectTrigger className="w-full sm:w-[180px]">
                     <SelectValue placeholder="Select class" />
                   </SelectTrigger>
                   <SelectContent>
@@ -398,7 +398,7 @@ export function TeacherDashboard() {
                   </SelectContent>
                 </Select>
                 <Select value={quickAcademicYearId || ""} onValueChange={setQuickAcademicYearId}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="Academic year" />
                   </SelectTrigger>
                   <SelectContent>
@@ -411,7 +411,7 @@ export function TeacherDashboard() {
                 </Select>
                 <Button
                   size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
+                  className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
                   onClick={handleSaveAll}
                   disabled={quickSubmitting}
                 >
@@ -424,16 +424,16 @@ export function TeacherDashboard() {
               {!quickSubjectId ? (
                 <p className="text-sm text-gray-500 py-4">No subject assigned for this class.</p>
               ) : (
-                <div className="overflow-x-auto -mx-4 sm:mx-0">
-                  <Table>
+                <div className="overflow-x-auto">
+                  <Table className="min-w-[560px]">
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Student</TableHead>
+                        <TableHead className="min-w-[140px]">Student</TableHead>
                         {EXAM_CATEGORIES.map(({ code, label }) => (
-                          <TableHead key={code}>{label}</TableHead>
+                          <TableHead key={code} className="min-w-[80px]">{label}</TableHead>
                         ))}
-                        <TableHead>Total /100</TableHead>
-                        <TableHead>Grade</TableHead>
+                        <TableHead className="min-w-[80px]">Total /100</TableHead>
+                        <TableHead className="min-w-[60px]">Grade</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
