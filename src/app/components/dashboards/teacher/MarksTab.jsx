@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Save, CheckCircle } from 'lucide-react';
 import { buildGrade } from '../../../utils/buildGrade.js';
@@ -24,6 +24,31 @@ import {
 import { Badge } from '../../../components/ui/badge.jsx';
 import { toast } from '../../../components/ui/sonner.jsx';
 
+// Ordered exam type codes — determines column order in the table
+const EXAM_ORDER = ['MIDTERM', 'FINAL', 'ASSIGNMENT', 'QUIZ'];
+
+// Max marks per exam type (out of subject.maxMarks, scaled by weightage)
+function getExamMax(examType, subjectMaxMarks) {
+  const total = Number(subjectMaxMarks || 100);
+  const w = Number(examType?.weightage || 0);
+  return Math.round((w / 100) * total);
+}
+
+// Weighted total: sum of (obtained / examMax * weightage) for each exam type
+function calcWeightedTotal(rowState, examTypes, subjectMaxMarks) {
+  let total = 0;
+  for (const et of examTypes) {
+    const val = rowState?.[et.id]?.marksObtained;
+    if (val === '' || val === undefined) continue;
+    const obtained = Number(val);
+    const examMax = getExamMax(et, subjectMaxMarks);
+    if (examMax > 0 && !Number.isNaN(obtained)) {
+      total += (obtained / examMax) * Number(et.weightage || 0);
+    }
+  }
+  return Math.min(total, 100);
+}
+
 export function MarksTab({
   currentTeacher,
   assignedClasses,
@@ -38,10 +63,23 @@ export function MarksTab({
   const navigate = useNavigate();
 
   const [selectedClassId, setSelectedClassId] = useState('');
-  const [selectedExamTypeId, setSelectedExamTypeId] = useState('');
   const [selectedAcademicYearId, setSelectedAcademicYearId] = useState('');
+  // marksByStudentId: { [studentId]: { [examTypeId]: { marksObtained, markId } } }
   const [marksByStudentId, setMarksByStudentId] = useState({});
   const [submitting, setSubmitting] = useState(false);
+
+  // Sort exam types by preferred order
+  const orderedExamTypes = useMemo(() => {
+    if (!examTypes?.length) return [];
+    const sorted = [...examTypes].sort((a, b) => {
+      const ai = EXAM_ORDER.indexOf(a.code?.toUpperCase());
+      const bi = EXAM_ORDER.indexOf(b.code?.toUpperCase());
+      const aIdx = ai === -1 ? 99 : ai;
+      const bIdx = bi === -1 ? 99 : bi;
+      return aIdx - bIdx;
+    });
+    return sorted;
+  }, [examTypes]);
 
   // Auto-select first class
   useEffect(() => {
@@ -49,13 +87,6 @@ export function MarksTab({
       setSelectedClassId(String(assignedClasses[0].id));
     }
   }, [assignedClasses, selectedClassId]);
-
-  // Auto-select first exam type
-  useEffect(() => {
-    if (!selectedExamTypeId && examTypes.length > 0) {
-      setSelectedExamTypeId(String(examTypes[0].id));
-    }
-  }, [examTypes, selectedExamTypeId]);
 
   // Auto-select active academic year
   useEffect(() => {
@@ -70,115 +101,116 @@ export function MarksTab({
     [classStudents, selectedClassId]
   );
 
-  const existingMarksByStudentId = useMemo(() => {
-    const lookup = new Map();
+  // Build lookup: { studentId: { examTypeId: mark } }
+  const existingMarksLookup = useMemo(() => {
+    const lookup = {};
     marks.forEach((mark) => {
       if (
         String(mark.classId) === String(selectedClassId) &&
         String(mark.subjectId) === String(currentTeacher?.subjectId || '') &&
-        String(mark.examTypeId) === String(selectedExamTypeId) &&
         String(mark.academicYearId || '') === String(selectedAcademicYearId || '')
       ) {
-        lookup.set(mark.studentId, mark);
+        const sid = String(mark.studentId);
+        const etid = String(mark.examTypeId);
+        if (!lookup[sid]) lookup[sid] = {};
+        lookup[sid][etid] = mark;
       }
     });
     return lookup;
-  }, [marks, selectedClassId, currentTeacher?.subjectId, selectedExamTypeId, selectedAcademicYearId]);
+  }, [marks, selectedClassId, currentTeacher?.subjectId, selectedAcademicYearId]);
 
-  // Sync marksByStudentId from existingMarksByStudentId when selectors change
+  // Sync state when class/year/students change
   useEffect(() => {
     const nextState = {};
     studentsInClass.forEach((student) => {
-      const existingMark = existingMarksByStudentId.get(student.id);
-      nextState[student.id] = existingMark
-        ? {
-            marksObtained: String(existingMark.marks),
-            remarks: existingMark.remarks || '',
-            markId: existingMark.id,
-          }
-        : {
-            marksObtained: '',
-            remarks: '',
-            markId: '',
-          };
+      const sid = String(student.id);
+      nextState[sid] = {};
+      orderedExamTypes.forEach((et) => {
+        const etid = String(et.id);
+        const existing = existingMarksLookup[sid]?.[etid];
+        nextState[sid][etid] = existing
+          ? { marksObtained: String(existing.marks), markId: existing.id }
+          : { marksObtained: '', markId: '' };
+      });
     });
     setMarksByStudentId(nextState);
-  }, [studentsInClass, existingMarksByStudentId]);
+  }, [studentsInClass, existingMarksLookup, orderedExamTypes]);
 
-  const handleValueChange = (studentId, key, value) => {
+  const handleValueChange = (studentId, examTypeId, value) => {
     setMarksByStudentId((prev) => ({
       ...prev,
       [studentId]: {
         ...prev[studentId],
-        [key]: value,
+        [examTypeId]: {
+          ...prev[studentId]?.[examTypeId],
+          marksObtained: value,
+        },
       },
     }));
   };
 
   const handleSubmit = async () => {
-    if (!selectedClassId || !selectedExamTypeId || !selectedAcademicYearId || !assignedSubject) {
-      toast.error('Please select all required fields');
+    if (!selectedClassId || !selectedAcademicYearId || !assignedSubject) {
+      toast.error('Please select class and academic year');
       return;
     }
 
-    const entries = studentsInClass
-      .map((student) => ({
-        student,
-        values: marksByStudentId[student.id] || {},
-      }))
-      .filter(({ values }) => String(values.marksObtained || '').trim() !== '');
+    const createPayload = [];
+    const updatePayload = [];
+    let hasAnyEntry = false;
+    let validationError = null;
 
-    if (entries.length === 0) {
+    for (const student of studentsInClass) {
+      const sid = String(student.id);
+      for (const et of orderedExamTypes) {
+        const etid = String(et.id);
+        const cell = marksByStudentId[sid]?.[etid] || {};
+        const raw = String(cell.marksObtained || '').trim();
+        if (raw === '') continue;
+
+        hasAnyEntry = true;
+        const obtained = Number(raw);
+        const examMax = getExamMax(et, assignedSubject.maxMarks);
+
+        if (Number.isNaN(obtained) || obtained < 0 || obtained > examMax) {
+          validationError = `Invalid marks for ${student.firstName} ${student.lastName} — ${et.name} (max ${examMax})`;
+          break;
+        }
+
+        const payload = {
+          studentId: Number(student.id),
+          subjectId: Number(assignedSubject.id),
+          classId: Number(selectedClassId),
+          examTypeId: Number(et.id),
+          academicYearId: selectedAcademicYearId ? Number(selectedAcademicYearId) : null,
+          marksObtained: obtained,
+          maxMarks: examMax,
+          grade: buildGrade(obtained, examMax),
+          remarks: '',
+        };
+
+        if (cell.markId) {
+          updatePayload.push({ id: Number(cell.markId), payload });
+        } else {
+          createPayload.push(payload);
+        }
+      }
+      if (validationError) break;
+    }
+
+    if (validationError) {
+      toast.error(validationError);
+      return;
+    }
+    if (!hasAnyEntry) {
       toast.error('Please enter at least one mark');
-      return;
-    }
-
-    const maxMarks = Number(assignedSubject.maxMarks || 100);
-    const invalidEntry = entries.find(({ values }) => {
-      const num = Number(values.marksObtained);
-      return Number.isNaN(num) || num < 0 || num > maxMarks;
-    });
-
-    if (invalidEntry) {
-      toast.error(
-        `Invalid marks for ${invalidEntry.student.firstName} ${invalidEntry.student.lastName}`
-      );
       return;
     }
 
     setSubmitting(true);
     try {
-      const createPayload = [];
-      const updatePayload = [];
-
-      entries.forEach(({ student, values }) => {
-        const marksObtained = Number(values.marksObtained);
-        const payload = {
-          studentId: Number(student.id),
-          subjectId: Number(assignedSubject.id),
-          classId: Number(selectedClassId),
-          examTypeId: Number(selectedExamTypeId),
-          academicYearId: selectedAcademicYearId ? Number(selectedAcademicYearId) : null,
-          marksObtained,
-          maxMarks,
-          grade: buildGrade(marksObtained, maxMarks),
-          remarks: values.remarks || '',
-        };
-
-        if (values.markId) {
-          updatePayload.push({ id: Number(values.markId), payload });
-        } else {
-          createPayload.push(payload);
-        }
-      });
-
-      if (createPayload.length > 0) {
-        await addMarks(createPayload);
-      }
-      for (const item of updatePayload) {
-        await updateMark(item.id, item.payload);
-      }
-
+      if (createPayload.length > 0) await addMarks(createPayload);
+      for (const item of updatePayload) await updateMark(item.id, item.payload);
       toast.success('Marks saved successfully');
     } catch (error) {
       toast.error(error.message || 'Failed to save marks');
@@ -187,14 +219,14 @@ export function MarksTab({
     }
   };
 
-  const maxMarks = Number(assignedSubject?.maxMarks || 100);
+  const subjectMaxMarks = Number(assignedSubject?.maxMarks || 100);
 
   return (
     <div className="space-y-6 pt-4">
-      {/* Selector grid */}
+      {/* Selectors */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Subject</Label>
               <div className="px-3 py-2 border rounded-md bg-gray-50 text-sm font-medium">
@@ -210,23 +242,7 @@ export function MarksTab({
                 <SelectContent>
                   {assignedClasses.map((cls) => (
                     <SelectItem key={cls.id} value={String(cls.id)}>
-                      {cls.name} - Grade {cls.grade}
-                      {cls.section ? ` (${cls.section})` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>Exam Type *</Label>
-              <Select value={selectedExamTypeId || ''} onValueChange={setSelectedExamTypeId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select exam type" />
-                </SelectTrigger>
-                <SelectContent>
-                  {examTypes.map((et) => (
-                    <SelectItem key={et.id} value={String(et.id)}>
-                      {et.name}
+                      {cls.name} - Grade {cls.grade}{cls.section ? ` (${cls.section})` : ''}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -251,82 +267,111 @@ export function MarksTab({
         </CardContent>
       </Card>
 
+      {/* Weightage legend */}
+      {orderedExamTypes.length > 0 && (
+        <div className="flex flex-wrap gap-3">
+          {orderedExamTypes.map((et) => (
+            <div key={et.id} className="flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+              <span className="font-medium">{et.name}</span>
+              <span className="text-gray-400">·</span>
+              <span>{et.weightage}% weight · max {getExamMax(et, subjectMaxMarks)} pts</span>
+            </div>
+          ))}
+          <div className="flex items-center gap-1.5 text-xs text-blue-700 bg-blue-50 rounded-full px-3 py-1 font-medium">
+            Total = 100%
+          </div>
+        </div>
+      )}
+
       {/* Marks table */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Student Marks</CardTitle>
+          <Button
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Save className="mr-2 h-4 w-4" />
+            {submitting ? 'Saving...' : 'Save Marks'}
+          </Button>
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Student Name</TableHead>
-                  <TableHead>Admission #</TableHead>
-                  <TableHead>Marks Obtained</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Remarks</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead className="min-w-[160px]">Student</TableHead>
+                  {orderedExamTypes.map((et) => (
+                    <TableHead key={et.id} className="min-w-[110px] text-center">
+                      <div>{et.name}</div>
+                      <div className="text-xs font-normal text-gray-400">
+                        / {getExamMax(et, subjectMaxMarks)} pts
+                      </div>
+                    </TableHead>
+                  ))}
+                  <TableHead className="min-w-[90px] text-center">Total %</TableHead>
+                  <TableHead className="min-w-[60px] text-center">Grade</TableHead>
+                  <TableHead className="min-w-[70px] text-center">Status</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {studentsInClass.length > 0 ? (
                   studentsInClass.map((student) => {
-                    const rowState = marksByStudentId[student.id] || {};
-                    const hasValue = String(rowState.marksObtained || '').trim() !== '';
-                    const numericMarks = Number(rowState.marksObtained);
-                    const grade =
-                      hasValue && !Number.isNaN(numericMarks)
-                        ? buildGrade(numericMarks, maxMarks)
-                        : '-';
+                    const sid = String(student.id);
+                    const rowState = marksByStudentId[sid] || {};
+                    const weightedTotal = calcWeightedTotal(rowState, orderedExamTypes, subjectMaxMarks);
+                    const hasAnyValue = orderedExamTypes.some(
+                      (et) => String(rowState[et.id]?.marksObtained || '').trim() !== ''
+                    );
+                    const hasSaved = orderedExamTypes.some((et) => rowState[et.id]?.markId);
+                    const grade = hasAnyValue ? buildGrade(weightedTotal, 100) : '—';
 
                     return (
                       <TableRow key={student.id}>
-                        <TableCell className="font-medium">
-                          {student.firstName} {student.lastName}
-                        </TableCell>
-                        <TableCell>{student.admissionNumber || '-'}</TableCell>
                         <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Input
-                              type="number"
-                              min="0"
-                              max={maxMarks}
-                              value={rowState.marksObtained || ''}
-                              onChange={(e) =>
-                                handleValueChange(student.id, 'marksObtained', e.target.value)
-                              }
-                              placeholder="0"
-                              className="w-20"
-                            />
-                            <span className="text-sm text-gray-500">/ {maxMarks}</span>
-                          </div>
+                          <div className="font-medium">{student.firstName} {student.lastName}</div>
+                          <div className="text-xs text-gray-400">{student.admissionNumber || ''}</div>
                         </TableCell>
-                        <TableCell className="font-medium text-green-600">{grade}</TableCell>
-                        <TableCell>
-                          <Input
-                            value={rowState.remarks || ''}
-                            onChange={(e) =>
-                              handleValueChange(student.id, 'remarks', e.target.value)
-                            }
-                            placeholder="Remarks"
-                            className="w-32"
-                          />
+                        {orderedExamTypes.map((et) => {
+                          const etid = String(et.id);
+                          const cell = rowState[etid] || {};
+                          const examMax = getExamMax(et, subjectMaxMarks);
+                          const val = cell.marksObtained ?? '';
+                          const num = Number(val);
+                          const isInvalid = val !== '' && (Number.isNaN(num) || num < 0 || num > examMax);
+
+                          return (
+                            <TableCell key={et.id} className="text-center">
+                              <Input
+                                type="number"
+                                min="0"
+                                max={examMax}
+                                value={val}
+                                onChange={(e) => handleValueChange(sid, etid, e.target.value)}
+                                placeholder="—"
+                                className={`w-20 mx-auto text-center ${isInvalid ? 'border-red-400 focus-visible:ring-red-400' : ''}`}
+                              />
+                              {isInvalid && (
+                                <div className="text-xs text-red-500 mt-0.5">max {examMax}</div>
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-center font-semibold">
+                          {hasAnyValue ? `${weightedTotal.toFixed(1)}%` : '—'}
                         </TableCell>
-                        <TableCell>
-                          {rowState.markId ? (
-                            <Badge
-                              variant="outline"
-                              className="bg-green-50 text-green-700 border-green-200"
-                            >
+                        <TableCell className="text-center font-semibold text-green-600">
+                          {grade}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          {hasSaved ? (
+                            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
                               <CheckCircle className="w-3 h-3 mr-1" />
                               Saved
                             </Badge>
                           ) : (
-                            <Badge
-                              variant="outline"
-                              className="bg-gray-50 text-gray-600 border-gray-200"
-                            >
+                            <Badge variant="outline" className="bg-gray-50 text-gray-600 border-gray-200">
                               New
                             </Badge>
                           )}
@@ -336,10 +381,8 @@ export function MarksTab({
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="py-8 text-center text-gray-500">
-                      {selectedClassId
-                        ? 'No students found in this class'
-                        : 'Please select a class first'}
+                    <TableCell colSpan={orderedExamTypes.length + 4} className="py-8 text-center text-gray-500">
+                      {selectedClassId ? 'No students found in this class' : 'Please select a class first'}
                     </TableCell>
                   </TableRow>
                 )}
@@ -349,18 +392,9 @@ export function MarksTab({
         </CardContent>
       </Card>
 
-      {/* Actions */}
-      <div className="flex items-center justify-between">
+      <div className="flex justify-start">
         <Button variant="outline" onClick={() => navigate('/marks')}>
           Open full Marks page
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="bg-blue-600 hover:bg-blue-700"
-        >
-          <Save className="mr-2 h-4 w-4" />
-          {submitting ? 'Saving...' : 'Save Marks'}
         </Button>
       </div>
     </div>
