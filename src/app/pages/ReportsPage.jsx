@@ -107,67 +107,213 @@ function ReportCard({ report, classInfo, index, totalCards }) {
     ? `${classInfo.grade}${classInfo.section ? classInfo.section : ''}`
     : (classInfo?.name || report.student.className || '-');
 
+  // Calculate grade from average
+  const getLetterGrade = (avg) => {
+    const percentage = parseFloat(avg);
+    if (percentage >= 90) return 'A';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'D';
+    return 'F';
+  };
+
+  const letterGrade = getLetterGrade(report.average);
+
   return (
     <Card
       data-report-card="true"
-      className="border-gray-200 overflow-hidden bg-white print:shadow-none print:border-0"
+      className="border-2 border-gray-300 overflow-hidden bg-white shadow-lg print:shadow-none print:border-2"
       style={{ breakAfter: index === totalCards - 1 ? 'auto' : 'page' }}
     >
       <CardContent className="p-0">
-        <div className="relative p-5 sm:p-6">
-          <div className="absolute left-0 top-0 h-0 w-0 border-r-[18px] border-t-[18px] border-r-transparent border-t-green-500" />
-          <div className="overflow-hidden border border-gray-200">
-            <div className="bg-[#5f97cc] px-4 py-4 text-center text-white">
-              <h1 className="text-xl font-bold uppercase">Marvel School Student Report Card</h1>
-              <p className="mt-1 text-lg font-semibold uppercase">Grade: {gradeLabel}</p>
-              <p className="mt-1 text-base font-semibold uppercase">Homeroom Teacher: {homeroomTeacher}</p>
-              <p className="mt-1 text-base font-semibold uppercase">Academic Year: {academicYearLabel}</p>
+        {/* Header Section */}
+        <div className="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-6 text-white border-b-4 border-blue-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              {/* School Logo Placeholder */}
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center">
+                <span className="text-2xl font-bold text-blue-600">MS</span>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-wide">MARVEL SCHOOL</h1>
+                <p className="text-sm text-blue-100 mt-0.5">Excellence in Education</p>
+              </div>
             </div>
-            <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-[#d6e1f1] text-left text-gray-900">
-                    <th className="border border-white px-3 py-2 font-bold uppercase">Student Name</th>
-                    <th className="border border-white px-3 py-2 font-bold uppercase">Gender</th>
-                    <th className="border border-white px-3 py-2 font-bold uppercase">ID</th>
-                    {report.marksWithSubjects.map((mark) => (
-                      <th key={mark.subjectId} className="border border-white px-3 py-2 text-center font-bold uppercase">
-                        {mark.subjectName}
-                      </th>
-                    ))}
-                    <th className="border border-white px-3 py-2 text-center font-bold uppercase">Total</th>
-                    <th className="border border-white px-3 py-2 text-center font-bold uppercase">Avg</th>
-                    <th className="border border-white px-3 py-2 text-center font-bold uppercase">Rank</th>
-                    <th className="border border-white px-3 py-2 text-center font-bold uppercase">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr className="bg-[#eaf0f8] text-gray-900">
-                    <td className="border border-white px-3 py-3 font-medium">{getStudentName(report.student)}</td>
-                    <td className="border border-white px-3 py-3">{getGenderLabel(report.student.gender)}</td>
-                    <td className="border border-white px-3 py-3">{getStudentIdentifier(report.student)}</td>
-                    {report.marksWithSubjects.map((mark) => (
-                      <td key={mark.subjectId} className="border border-white px-3 py-3 text-center">{mark.marks}</td>
-                    ))}
-                    <td className="border border-white px-3 py-3 text-center font-semibold">{report.total}</td>
-                    <td className="border border-white px-3 py-3 text-center font-semibold">{report.average}</td>
-                    <td className="border border-white px-3 py-3 text-center font-semibold">{report.rank}</td>
-                    <td className={`border border-white px-3 py-3 text-center font-bold text-white ${report.status === 'PASS' ? 'bg-[#00b050]' : 'bg-[#c00000]'}`}>
-                      {report.status}
-                    </td>
-                  </tr>
-                  {report.marksWithSubjects.length === 0 && (
-                    <tr>
-                      <td colSpan={7} className="border border-white px-3 py-8 text-center text-gray-500">
-                        No marks are available for this student yet.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
+            <div className="text-right">
+              <p className="text-sm font-medium text-blue-100">Academic Year</p>
+              <p className="text-lg font-bold">{academicYearLabel}</p>
             </div>
           </div>
+          <div className="text-center border-t border-blue-500 pt-3">
+            <h2 className="text-xl font-bold uppercase tracking-wider">Student Academic Report Card</h2>
+          </div>
+        </div>
 
+        {/* Student Information Section */}
+        <div className="bg-gray-50 px-6 py-4 border-b-2 border-gray-200">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Student Name</p>
+              <p className="text-base font-bold text-gray-900 mt-1">{getStudentName(report.student)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Student ID</p>
+              <p className="text-base font-bold text-gray-900 mt-1">{getStudentIdentifier(report.student)}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Grade/Section</p>
+              <p className="text-base font-bold text-gray-900 mt-1">{gradeLabel}</p>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Gender</p>
+              <p className="text-base font-bold text-gray-900 mt-1">{getGenderLabel(report.student.gender)}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Marks Table */}
+        <div className="p-6">
+          <h3 className="text-lg font-bold text-gray-900 mb-4 uppercase tracking-wide border-b-2 border-blue-600 pb-2">Academic Performance</h3>
+          <div className="overflow-x-auto">
+            <table className="w-full border-2 border-gray-300 text-sm">
+              <thead>
+                <tr className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                  <th className="border border-blue-500 px-4 py-3 text-left font-bold uppercase tracking-wide">Subject</th>
+                  <th className="border border-blue-500 px-4 py-3 text-center font-bold uppercase tracking-wide">Marks Obtained</th>
+                  <th className="border border-blue-500 px-4 py-3 text-center font-bold uppercase tracking-wide">Maximum Marks</th>
+                  <th className="border border-blue-500 px-4 py-3 text-center font-bold uppercase tracking-wide">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+                {report.marksWithSubjects.length > 0 ? (
+                  report.marksWithSubjects.map((mark, idx) => (
+                    <tr key={mark.subjectId} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                      <td className="border border-gray-300 px-4 py-3 font-semibold text-gray-900">{mark.subjectName}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">{mark.marks}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-center text-gray-700">{mark.maxMarks}</td>
+                      <td className="border border-gray-300 px-4 py-3 text-center font-bold text-gray-900">{mark.percentage}%</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="border border-gray-300 px-4 py-8 text-center text-gray-500 italic">
+                      No marks are available for this student yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Summary Section */}
+          {report.marksWithSubjects.length > 0 && (
+            <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4 text-center">
+                <p className="text-xs font-semibold text-blue-600 uppercase tracking-wide">Total Marks</p>
+                <p className="text-2xl font-bold text-blue-900 mt-1">{report.total} / {report.maxTotal}</p>
+              </div>
+              <div className="bg-purple-50 border-2 border-purple-200 rounded-lg p-4 text-center">
+                <p className="text-xs font-semibold text-purple-600 uppercase tracking-wide">Average</p>
+                <p className="text-2xl font-bold text-purple-900 mt-1">{report.average}%</p>
+              </div>
+              <div className="bg-amber-50 border-2 border-amber-200 rounded-lg p-4 text-center">
+                <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide">Grade</p>
+                <p className="text-2xl font-bold text-amber-900 mt-1">{letterGrade}</p>
+              </div>
+              <div className={`border-2 rounded-lg p-4 text-center ${report.status === 'PASS' ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <p className={`text-xs font-semibold uppercase tracking-wide ${report.status === 'PASS' ? 'text-green-600' : 'text-red-600'}`}>Status</p>
+                <p className={`text-2xl font-bold mt-1 ${report.status === 'PASS' ? 'text-green-900' : 'text-red-900'}`}>{report.status}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Class Rank */}
+          {report.marksWithSubjects.length > 0 && (
+            <div className="mt-4 bg-gradient-to-r from-indigo-50 to-blue-50 border-2 border-indigo-200 rounded-lg p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-indigo-600 uppercase tracking-wide">Class Rank</p>
+                  <p className="text-lg text-indigo-900 mt-1">Position <span className="text-3xl font-bold">{report.rank}</span> in class</p>
+                </div>
+                <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center">
+                  <span className="text-2xl font-bold text-white">#{report.rank}</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Grading Scale Legend */}
+          <div className="mt-6 bg-gray-50 border-2 border-gray-200 rounded-lg p-4">
+            <h4 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">Ethiopian Grading Scale</h4>
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-green-600 text-white rounded font-bold flex items-center justify-center">A</div>
+                <div>
+                  <p className="font-semibold text-gray-900">90-100%</p>
+                  <p className="text-gray-600">Excellent</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-blue-600 text-white rounded font-bold flex items-center justify-center">B</div>
+                <div>
+                  <p className="font-semibold text-gray-900">80-89%</p>
+                  <p className="text-gray-600">Very Good</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-yellow-600 text-white rounded font-bold flex items-center justify-center">C</div>
+                <div>
+                  <p className="font-semibold text-gray-900">60-79%</p>
+                  <p className="text-gray-600">Good</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-orange-600 text-white rounded font-bold flex items-center justify-center">D</div>
+                <div>
+                  <p className="font-semibold text-gray-900">50-59%</p>
+                  <p className="text-gray-600">Satisfactory</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 bg-red-600 text-white rounded font-bold flex items-center justify-center">F</div>
+                <div>
+                  <p className="font-semibold text-gray-900">0-49%</p>
+                  <p className="text-gray-600">Failure</p>
+                </div>
+              </div>
+            </div>
+            <p className="text-xs text-gray-600 mt-3 italic">* Passing mark: 50% (Grade D or above)</p>
+          </div>
+        </div>
+
+        {/* Footer Section */}
+        <div className="bg-gray-50 px-6 py-5 border-t-2 border-gray-200">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Homeroom Teacher</p>
+              <p className="text-sm font-bold text-gray-900 mb-3">{homeroomTeacher}</p>
+              <div className="border-t-2 border-gray-400 pt-1">
+                <p className="text-xs text-gray-600">Signature & Date</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Principal</p>
+              <p className="text-sm font-bold text-gray-900 mb-3">_________________</p>
+              <div className="border-t-2 border-gray-400 pt-1">
+                <p className="text-xs text-gray-600">Signature & Date</p>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Parent/Guardian</p>
+              <p className="text-sm font-bold text-gray-900 mb-3">_________________</p>
+              <div className="border-t-2 border-gray-400 pt-1">
+                <p className="text-xs text-gray-600">Signature & Date</p>
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-gray-300 text-center">
+            <p className="text-xs text-gray-600">This is an official document. Any alteration or forgery is punishable by law.</p>
+          </div>
         </div>
       </CardContent>
     </Card>

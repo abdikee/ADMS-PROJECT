@@ -1,5 +1,19 @@
 import pool from '../config/database.js';
 
+/**
+ * Ethiopian Curriculum Grading System
+ * 
+ * Grading Scale (Ethiopian General Secondary Education Certificate):
+ * - A (90-100%): Excellent
+ * - B (80-89.99%): Very Good
+ * - C (60-79.99%): Good
+ * - D (50-59.99%): Satisfactory (Minimum Passing Grade)
+ * - F (0-49.99%): Failure
+ * 
+ * Passing Mark: 50%
+ */
+
+// Exam weightage for calculating final grades
 const EXAM_WEIGHTS = { MIDTERM: 30, FINAL: 50, QUIZ: 10, ASSIGNMENT: 10 };
 
 function computeWeightedTotal(marksByCategory, subjectMaxMarks) {
@@ -130,7 +144,8 @@ export const getStudentReport = async (req, res) => {
     });
 
     const average = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
-    const status = average >= 40 ? 'PASS' : 'FAIL';
+    // Ethiopian curriculum: 50% is the passing mark
+    const status = average >= 50 ? 'PASS' : 'FAIL';
 
     res.json({
       student,
@@ -305,7 +320,8 @@ export const getClassReport = async (req, res) => {
         average_percentage: avg,
         weightedTotal,
         rank: currentRank,
-        status: weightedTotal >= 40 ? 'PASS' : 'FAIL'
+        // Ethiopian curriculum: 50% is the passing mark
+        status: weightedTotal >= 50 ? 'PASS' : 'FAIL'
       };
     });
 
