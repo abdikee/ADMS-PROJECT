@@ -12,32 +12,30 @@ export const checkTeacherSubjectAccess = async (req, res, next) => {
     let classId;
 
     if (req.method === 'POST') {
-      // For create: read from req.body (may be array or single object)
       const body = Array.isArray(req.body) ? req.body[0] : req.body;
       subjectId = body?.subjectId;
       classId = body?.classId;
     } else {
-      // For update: look up the existing mark from DB
       const markId = req.params.id;
-      const [rows] = await pool.query(
-        'SELECT subject_id, class_id FROM marks WHERE id = ?',
+      const [markRows] = await pool.query(
+        'SELECT subject_id, class_id FROM marks WHERE id = $1',
         [markId]
       );
 
-      if (!rows || rows.length === 0) {
+      if (!markRows || markRows.length === 0) {
         return res.status(404).json({ error: 'Mark not found' });
       }
 
-      subjectId = rows[0].subject_id;
-      classId = rows[0].class_id;
+      subjectId = markRows[0].subject_id;
+      classId = markRows[0].class_id;
     }
 
-    const [rows] = await pool.query(
-      'SELECT 1 FROM teacher_subjects WHERE teacher_id = ? AND subject_id = ? AND class_id = ? LIMIT 1',
+    const [assignmentRows] = await pool.query(
+      'SELECT 1 FROM teacher_subjects WHERE teacher_id = $1 AND subject_id = $2 AND class_id = $3 LIMIT 1',
       [teacherId, subjectId, classId]
     );
 
-    if (!rows || rows.length === 0) {
+    if (!assignmentRows || assignmentRows.length === 0) {
       return res.status(403).json({ error: 'Teachers can only add marks for their assigned subject and class' });
     }
 
@@ -58,12 +56,12 @@ export const checkHomeroomAccess = async (req, res, next) => {
 
     const classId = req.query?.classId || req.params?.classId;
 
-    const [rows] = await pool.query(
-      'SELECT 1 FROM classes WHERE id = ? AND homeroom_teacher_id = ? LIMIT 1',
+    const [homeroomRows] = await pool.query(
+      'SELECT 1 FROM classes WHERE id = $1 AND homeroom_teacher_id = $2 LIMIT 1',
       [classId, teacherId]
     );
 
-    if (!rows || rows.length === 0) {
+    if (!homeroomRows || homeroomRows.length === 0) {
       return res.status(403).json({ error: 'Access restricted to your homeroom class' });
     }
 

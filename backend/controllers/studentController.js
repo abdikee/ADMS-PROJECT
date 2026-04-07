@@ -3,17 +3,17 @@ import bcrypt from 'bcrypt';
 
 function applyStudentAccessFilters(req, filters, params, studentAlias = 's') {
   if (req.user.role === 'student' && req.user.studentId) {
-    filters.push(`${studentAlias}.id = ?`);
+    const i = params.length + 1;
+    filters.push(`${studentAlias}.id = $${i}`);
     params.push(req.user.studentId);
   }
 
   if (req.user.role === 'teacher' && req.user.teacherId) {
+    const i = params.length + 1;
     filters.push(
       `EXISTS (
-        SELECT 1
-        FROM teacher_subjects ts
-        WHERE ts.teacher_id = ?
-          AND ts.class_id = ${studentAlias}.class_id
+        SELECT 1 FROM teacher_subjects ts
+        WHERE ts.teacher_id = $${i} AND ts.class_id = ${studentAlias}.class_id
       )`
     );
     params.push(req.user.teacherId);
@@ -29,21 +29,9 @@ export const getAllStudents = async (req, res) => {
 
     const [students] = await pool.query(`
       SELECT
-        s.id,
-        s.class_id,
-        s.first_name,
-        s.last_name,
-        s.email,
-        s.phone,
-        s.roll_number,
-        s.admission_number,
-        s.date_of_birth,
-        s.gender,
-        c.name AS class_name,
-        c.grade,
-        c.section,
-        u.username,
-        s.is_active
+        s.id, s.class_id, s.first_name, s.last_name, s.email, s.phone,
+        s.roll_number, s.admission_number, s.date_of_birth, s.gender,
+        c.name AS class_name, c.grade, c.section, u.username, s.is_active
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN users u ON s.user_id = u.id
@@ -62,17 +50,12 @@ export const getStudentById = async (req, res) => {
   try {
     const { id } = req.params;
     const params = [id];
-    const filters = ['s.id = ?'];
+    const filters = ['s.id = $1'];
 
     applyStudentAccessFilters(req, filters, params);
 
     const [students] = await pool.query(`
-      SELECT
-        s.*,
-        c.name AS class_name,
-        c.grade,
-        c.section,
-        u.username
+      SELECT s.*, c.name AS class_name, c.grade, c.section, u.username
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN users u ON s.user_id = u.id
@@ -96,17 +79,7 @@ export const createStudent = async (req, res) => {
   try {
     await connection.beginTransaction();
 
-    const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      classId,
-      dateOfBirth,
-      gender,
-      username,
-      password
-    } = req.body;
+    const { firstName, lastName, email, phone, classId, dateOfBirth, gender, username, password } = req.body;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
@@ -114,25 +87,25 @@ export const createStudent = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const [userResult] = await connection.query(
-      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
       [username, hashedPassword, 'student']
     );
 
-    const userId = userResult.insertId;
+    const userId = userResult[0].id;
 
     const [studentResult] = await connection.query(
       `INSERT INTO students
        (user_id, first_name, last_name, email, phone, class_id, roll_number, admission_number, date_of_birth, gender)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [userId, firstName, lastName, email, phone, classId, null, null, dateOfBirth, gender]
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, $8) RETURNING id`,
+      [userId, firstName, lastName, email, phone, classId, dateOfBirth, gender]
     );
 
-    const studentId = studentResult.insertId;
+    const studentId = studentResult[0].id;
     const generatedRollNumber = `R${String(studentId).padStart(6, '0')}`;
     const generatedAdmissionNumber = `ADM${studentId}`;
 
     await connection.query(
-      'UPDATE students SET roll_number = ?, admission_number = ? WHERE id = ?',
+      'UPDATE students SET roll_number = $1, admission_number = $2 WHERE id = $3',
       [generatedRollNumber, generatedAdmissionNumber, studentId]
     );
 
@@ -158,25 +131,21 @@ export const updateStudent = async (req, res) => {
     const { id } = req.params;
     const updates = req.body;
     const fieldMap = {
-      firstName: 'first_name',
-      lastName: 'last_name',
-      email: 'email',
-      phone: 'phone',
-      classId: 'class_id',
-      rollNumber: 'roll_number',
-      admissionNumber: 'admission_number',
-      dateOfBirth: 'date_of_birth',
-      gender: 'gender',
+      firstName: 'first_name', lastName: 'last_name', email: 'email', phone: 'phone',
+      classId: 'class_id', rollNumber: 'roll_number', admissionNumber: 'admission_number',
+      dateOfBirth: 'date_of_birth', gender: 'gender',
     };
 
     const fields = [];
     const values = [];
+    let i = 1;
 
     Object.keys(updates).forEach((key) => {
       const dbField = fieldMap[key];
       if (dbField && updates[key] !== undefined) {
-        fields.push(`${dbField} = ?`);
+        fields.push(`${dbField} = $${i}`);
         values.push(updates[key]);
+        i++;
       }
     });
 
@@ -185,11 +154,7 @@ export const updateStudent = async (req, res) => {
     }
 
     values.push(id);
-
-    await pool.query(
-      `UPDATE students SET ${fields.join(', ')} WHERE id = ?`,
-      values
-    );
+    await pool.query(`UPDATE students SET ${fields.join(', ')} WHERE id = $${i}`, values);
 
     res.json({ message: 'Student updated successfully' });
   } catch (error) {
@@ -201,12 +166,7 @@ export const updateStudent = async (req, res) => {
 export const deleteStudent = async (req, res) => {
   try {
     const { id } = req.params;
-
-    await pool.query(
-      'UPDATE students SET is_active = FALSE WHERE id = ?',
-      [id]
-    );
-
+    await pool.query('UPDATE students SET is_active = FALSE WHERE id = $1', [id]);
     res.json({ message: 'Student deleted successfully' });
   } catch (error) {
     console.error('Error deleting student:', error);
@@ -225,9 +185,7 @@ export const generateCredentials = async (req, res) => {
 
     const [students] = await connection.query(
       `SELECT s.user_id, s.first_name, s.last_name, u.username
-       FROM students s
-       LEFT JOIN users u ON s.user_id = u.id
-       WHERE s.id = ?`,
+       FROM students s LEFT JOIN users u ON s.user_id = u.id WHERE s.id = $1`,
       [id]
     );
 
@@ -252,22 +210,19 @@ export const generateCredentials = async (req, res) => {
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let password = '';
-    for (let i = 0; i < 8; i += 1) {
-      password += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
+    for (let i = 0; i < 8; i += 1) password += chars.charAt(Math.floor(Math.random() * chars.length));
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await connection.query(
-      'UPDATE users SET username = ?, password = ? WHERE id = ?',
+      'UPDATE users SET username = $1, password = $2 WHERE id = $3',
       [username, hashedPassword, student.user_id]
     );
 
     await connection.commit();
 
     res.json({
-      username,
-      password,
+      username, password,
       message: regenerate ? 'Credentials regenerated successfully' : 'Credentials generated successfully',
       hasCredentials: true
     });

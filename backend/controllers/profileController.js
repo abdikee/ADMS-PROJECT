@@ -41,7 +41,7 @@ async function fetchAdminProfile(userId) {
       up.profile_photo
     FROM users u
     LEFT JOIN user_profiles up ON up.user_id = u.id
-    WHERE u.id = ?
+    WHERE u.id = $1
     LIMIT 1
   `, [userId]);
 
@@ -96,7 +96,7 @@ async function fetchTeacherProfile(userId) {
     LEFT JOIN subjects sub ON sub.id = ts.subject_id
     LEFT JOIN classes cls ON cls.id = ts.class_id
     LEFT JOIN classes home ON home.homeroom_teacher_id = t.id
-    WHERE u.id = ?
+    WHERE u.id = $1
     GROUP BY
       u.id, u.username, u.role, u.last_login, u.created_at, t.id, t.first_name, t.last_name,
       t.email, t.phone, t.date_of_birth, t.qualification, t.hire_date, t.address,
@@ -169,7 +169,7 @@ async function fetchStudentProfile(userId) {
     FROM users u
     JOIN students s ON s.user_id = u.id
     LEFT JOIN classes c ON c.id = s.class_id
-    WHERE u.id = ?
+    WHERE u.id = $1
     LIMIT 1
   `, [userId]);
 
@@ -252,7 +252,7 @@ export const updateMyProfile = async (req, res) => {
 
       await pool.query(
         `INSERT INTO user_profiles (user_id, full_name, email, phone, profile_photo)
-         VALUES (?, ?, ?, ?, ?)
+         VALUES ($1, $2, $3, $4, $5)
          ON CONFLICT (user_id) DO UPDATE SET
            full_name = EXCLUDED.full_name,
            email = EXCLUDED.email,
@@ -277,11 +277,13 @@ export const updateMyProfile = async (req, res) => {
 
       const fields = [];
       const values = [];
+      let i = 1;
 
       Object.entries(fieldMap).forEach(([key, column]) => {
         if (req.body[key] !== undefined) {
-          fields.push(`${column} = ?`);
+          fields.push(`${column} = $${i}`);
           values.push(req.body[key] || null);
+          i++;
         }
       });
 
@@ -292,7 +294,7 @@ export const updateMyProfile = async (req, res) => {
       values.push(req.user.id);
 
       await pool.query(
-        `UPDATE teachers SET ${fields.join(', ')} WHERE user_id = ?`,
+        `UPDATE teachers SET ${fields.join(', ')} WHERE user_id = $${i}`,
         values
       );
     } else if (req.user.role === 'student') {
@@ -315,11 +317,13 @@ export const updateMyProfile = async (req, res) => {
 
       const fields = [];
       const values = [];
+      let i = 1;
 
       Object.entries(fieldMap).forEach(([key, column]) => {
         if (req.body[key] !== undefined) {
-          fields.push(`${column} = ?`);
+          fields.push(`${column} = $${i}`);
           values.push(req.body[key] || null);
+          i++;
         }
       });
 
@@ -330,7 +334,7 @@ export const updateMyProfile = async (req, res) => {
       values.push(req.user.id);
 
       await pool.query(
-        `UPDATE students SET ${fields.join(', ')} WHERE user_id = ?`,
+        `UPDATE students SET ${fields.join(', ')} WHERE user_id = $${i}`,
         values
       );
     }
@@ -359,7 +363,7 @@ export const changeMyPassword = async (req, res) => {
     }
 
     const [users] = await pool.query(
-      'SELECT id, password FROM users WHERE id = ? LIMIT 1',
+      'SELECT id, password FROM users WHERE id = $1 LIMIT 1',
       [req.user.id]
     );
 
@@ -386,7 +390,7 @@ export const changeMyPassword = async (req, res) => {
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
     await pool.query(
-      'UPDATE users SET password = ? WHERE id = ?',
+      'UPDATE users SET password = $1 WHERE id = $2',
       [hashedPassword, req.user.id]
     );
 
@@ -457,19 +461,19 @@ export const uploadProfilePhoto = async (req, res) => {
   try {
     if (req.user.role === 'teacher') {
       await pool.query(
-        'UPDATE teachers SET profile_photo = ? WHERE user_id = ?',
+        'UPDATE teachers SET profile_photo = $1 WHERE user_id = $2',
         [photoUrl, req.user.id]
       );
     } else if (req.user.role === 'student') {
       await pool.query(
-        'UPDATE students SET profile_photo = ? WHERE user_id = ?',
+        'UPDATE students SET profile_photo = $1 WHERE user_id = $2',
         [photoUrl, req.user.id]
       );
     } else if (req.user.role === 'admin') {
       await ensureUserProfilesTable();
       await pool.query(
         `INSERT INTO user_profiles (user_id, profile_photo)
-         VALUES (?, ?)
+         VALUES ($1, $2)
          ON CONFLICT (user_id) DO UPDATE SET
            profile_photo = EXCLUDED.profile_photo,
            updated_at = CURRENT_TIMESTAMP`,

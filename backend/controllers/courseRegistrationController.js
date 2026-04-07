@@ -42,7 +42,7 @@ export const getMyCourseRegistrations = async (req, res) => {
       FROM course_registrations cr
       JOIN subjects sub ON cr.subject_id = sub.id
       JOIN academic_years ay ON cr.academic_year_id = ay.id
-      WHERE cr.student_id = ?
+      WHERE cr.student_id = $1
       ORDER BY ay.start_date DESC, sub.name
     `, [req.user.studentId]);
 
@@ -76,7 +76,7 @@ export const saveMyCourseRegistrations = async (req, res) => {
     }
 
     const [years] = await connection.query(
-      'SELECT id FROM academic_years WHERE id = ? LIMIT 1',
+      'SELECT id FROM academic_years WHERE id = $1 LIMIT 1',
       [academicYearId]
     );
 
@@ -85,14 +85,14 @@ export const saveMyCourseRegistrations = async (req, res) => {
     }
 
     await connection.query(
-      'DELETE FROM course_registrations WHERE student_id = ? AND academic_year_id = ? AND status = ?',
+      'DELETE FROM course_registrations WHERE student_id = $1 AND academic_year_id = $2 AND status = $3',
       [req.user.studentId, academicYearId, 'pending']
     );
 
     for (const subjectId of normalizedSubjectIds) {
       await connection.query(
         `INSERT INTO course_registrations (student_id, subject_id, academic_year_id, status)
-         VALUES (?, ?, ?, 'pending')
+         VALUES ($1, $2, $3, 'pending')
          ON CONFLICT (student_id, subject_id, academic_year_id)
          DO UPDATE SET status = EXCLUDED.status, updated_at = CURRENT_TIMESTAMP`,
         [req.user.studentId, subjectId, academicYearId]

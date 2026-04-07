@@ -26,16 +26,26 @@ export function AdminDashboard() {
   const totalSubjects = subjects.length;
   const totalTeachers = teachers.length;
 
-  const totalMarks = marks.reduce((sum, m) => sum + m.marks, 0);
-  const averagePerformance = marks.length > 0 ? (totalMarks / marks.length).toFixed(1) : 0;
+  // Fix #1: weight average against each mark's maxMarks instead of assuming 100
+  const averagePerformance = marks.length > 0
+    ? (() => {
+        const totalObtained = marks.reduce((sum, m) => sum + m.marks, 0);
+        const totalMax = marks.reduce((sum, m) => sum + (m.maxMarks || 100), 0);
+        return totalMax > 0 ? ((totalObtained / totalMax) * 100).toFixed(1) : 0;
+      })()
+    : 0;
 
-  const recentStudents = [...students].reverse().slice(0, 5);
+  // Fix #2: sort by id descending as a stable proxy for recency (no createdAt field)
+  const recentStudents = [...students]
+    .sort((a, b) => Number(b.id) - Number(a.id))
+    .slice(0, 5);
 
+  // Fix #3: pieData with empty state handled in JSX
   const pieData = subjects.map((subject) => {
     const subjectMarks = marks.filter((m) => m.subjectId === subject.id);
-    const avg = subjectMarks.length > 0
-      ? subjectMarks.reduce((sum, m) => sum + m.marks, 0) / subjectMarks.length
-      : 0;
+    const totalObtained = subjectMarks.reduce((sum, m) => sum + m.marks, 0);
+    const totalMax = subjectMarks.reduce((sum, m) => sum + (m.maxMarks || 100), 0);
+    const avg = totalMax > 0 ? (totalObtained / totalMax) * 100 : 0;
     return { name: subject.name, value: Number(avg.toFixed(1)) };
   }).filter((d) => d.value > 0);
 
@@ -45,7 +55,6 @@ export function AdminDashboard() {
       description: 'Create classes and assign homeroom teachers.',
       icon: School,
       href: '/classes',
-      action: 'Manage Classes',
       color: 'bg-indigo-100 text-indigo-600',
     },
     {
@@ -53,7 +62,6 @@ export function AdminDashboard() {
       description: 'Register students and manage class placement.',
       icon: Users,
       href: '/students',
-      action: 'Manage Students',
       color: 'bg-blue-100 text-blue-600',
     },
     {
@@ -61,7 +69,6 @@ export function AdminDashboard() {
       description: 'Add subjects and define grading limits.',
       icon: BookOpen,
       href: '/subjects',
-      action: 'Manage Subjects',
       color: 'bg-green-100 text-green-600',
     },
     {
@@ -69,7 +76,6 @@ export function AdminDashboard() {
       description: 'Assign teachers to subjects and classes.',
       icon: GraduationCap,
       href: '/teachers',
-      action: 'Manage Teachers',
       color: 'bg-purple-100 text-purple-600',
     },
     {
@@ -77,7 +83,6 @@ export function AdminDashboard() {
       description: 'Review academic performance and class reports.',
       icon: FileText,
       href: '/reports',
-      action: 'Open Reports',
       color: 'bg-orange-100 text-orange-600',
     },
     {
@@ -85,7 +90,6 @@ export function AdminDashboard() {
       description: 'Generate and manage login credentials.',
       icon: Key,
       href: '/credentials',
-      action: 'Open Credentials',
       color: 'bg-amber-100 text-amber-700',
     },
   ];
@@ -255,27 +259,33 @@ export function AdminDashboard() {
             <CardTitle className="text-lg font-semibold">Average Score by Subject</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieData}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {pieData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <RechartsTooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
+            {pieData.length > 0 ? (
+              <div className="h-64 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      outerRadius={80}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {pieData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="h-64 flex items-center justify-center text-sm text-gray-500">
+                No marks data available yet
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

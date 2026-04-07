@@ -128,7 +128,7 @@ export const createMarks = async (req, res) => {
       const [duplicates] = await connection.query(
         'SELECT id FROM marks WHERE student_id = ' + p(1) + ' AND subject_id = ' + p(2) +
         ' AND class_id = ' + p(3) + ' AND exam_type_id = ' + p(4) +
-        ' AND ((academic_year_id IS NULL AND ' + p(5) + ' IS NULL) OR academic_year_id = ' + p(5) + ')',
+        ' AND ((academic_year_id IS NULL AND ' + p(5) + '::int IS NULL) OR academic_year_id = ' + p(5) + '::int)',
         [studentIdNum, subjectIdNum, classIdNum, examTypeIdNum, academicYearIdNum]
       );
 

@@ -22,9 +22,7 @@ function normalizeAssignedClassIds(payload) {
 }
 
 async function ensureDepartmentExists(connection, departmentId) {
-  if (!departmentId) {
-    return null;
-  }
+  if (!departmentId) return null;
 
   const normalizedDepartmentId = Number(departmentId);
   if (!Number.isInteger(normalizedDepartmentId) || normalizedDepartmentId <= 0) {
@@ -32,14 +30,11 @@ async function ensureDepartmentExists(connection, departmentId) {
   }
 
   const [departments] = await connection.query(
-    'SELECT id FROM departments WHERE id = ? LIMIT 1',
+    'SELECT id FROM departments WHERE id = $1 LIMIT 1',
     [normalizedDepartmentId]
   );
 
-  if (departments.length === 0) {
-    throw createHttpError('Selected department was not found');
-  }
-
+  if (departments.length === 0) throw createHttpError('Selected department was not found');
   return normalizedDepartmentId;
 }
 
@@ -50,52 +45,45 @@ async function ensureSubjectExists(connection, subjectId) {
   }
 
   const [subjects] = await connection.query(
-    'SELECT id FROM subjects WHERE id = ? AND is_active = TRUE LIMIT 1',
+    'SELECT id FROM subjects WHERE id = $1 AND is_active = TRUE LIMIT 1',
     [normalizedSubjectId]
   );
 
-  if (subjects.length === 0) {
-    throw createHttpError('Selected subject was not found');
-  }
-
+  if (subjects.length === 0) throw createHttpError('Selected subject was not found');
   return normalizedSubjectId;
 }
 
 async function ensureUsernameAvailable(connection, username) {
   const normalizedUsername = String(username || '').trim();
-  if (!normalizedUsername) {
-    throw createHttpError('Username is required');
-  }
+  if (!normalizedUsername) throw createHttpError('Username is required');
 
   const [existingUsers] = await connection.query(
-    'SELECT id FROM users WHERE username = ? LIMIT 1',
+    'SELECT id FROM users WHERE username = $1 LIMIT 1',
     [normalizedUsername]
   );
 
-  if (existingUsers.length > 0) {
-    throw createHttpError('Username already exists');
-  }
-
+  if (existingUsers.length > 0) throw createHttpError('Username already exists');
   return normalizedUsername;
 }
 
 async function clearHomeroomAssignments(connection, teacherId) {
   await connection.query(
-    'UPDATE classes SET homeroom_teacher_id = NULL WHERE homeroom_teacher_id = ?',
+    'UPDATE classes SET homeroom_teacher_id = NULL WHERE homeroom_teacher_id = $1',
     [teacherId]
   );
 }
 
 async function syncTeacherAssignments(connection, teacherId, subjectId, assignedClassIds, homeroomClassId) {
   await connection.query(
-    'DELETE FROM teacher_subjects WHERE teacher_id = ?',
+    'DELETE FROM teacher_subjects WHERE teacher_id = $1',
     [teacherId]
   );
 
   if (subjectId && assignedClassIds.length > 0) {
+    const placeholders = assignedClassIds.map((_, i) => `$${i + 1}`).join(', ');
     const [classes] = await connection.query(
-      'SELECT id, academic_year_id FROM classes WHERE id IN (?)',
-      [assignedClassIds]
+      `SELECT id, academic_year_id FROM classes WHERE id IN (${placeholders})`,
+      assignedClassIds
     );
 
     if (classes.length !== assignedClassIds.length) {
@@ -105,7 +93,7 @@ async function syncTeacherAssignments(connection, teacherId, subjectId, assigned
     for (const classItem of classes) {
       await connection.query(
         `INSERT INTO teacher_subjects (teacher_id, subject_id, class_id, academic_year_id)
-         VALUES (?, ?, ?, ?)`,
+         VALUES ($1, $2, $3, $4)`,
         [teacherId, subjectId, classItem.id, classItem.academic_year_id || null]
       );
     }
@@ -115,7 +103,7 @@ async function syncTeacherAssignments(connection, teacherId, subjectId, assigned
 
   if (homeroomClassId) {
     await connection.query(
-      'UPDATE classes SET homeroom_teacher_id = ? WHERE id = ?',
+      'UPDATE classes SET homeroom_teacher_id = $1 WHERE id = $2',
       [teacherId, homeroomClassId]
     );
   }
@@ -165,7 +153,7 @@ export const getMyAssignments = async (req, res) => {
        FROM teacher_subjects ts
        JOIN subjects sub ON ts.subject_id = sub.id
        JOIN classes cls ON ts.class_id = cls.id
-       WHERE ts.teacher_id = ?`,
+       WHERE ts.teacher_id = $1`,
       [teacherId]
     );
 
@@ -208,7 +196,7 @@ export const getTeacherById = async (req, res) => {
 
     const [teachers] = await pool.query(`
       ${teacherSelect}
-      WHERE t.id = ?
+      WHERE t.id = $1
       GROUP BY
         t.id, t.department_id, t.first_name, t.last_name, t.email, t.phone,
         t.qualification, t.hire_date, d.name, u.username, t.is_active
@@ -230,29 +218,14 @@ export const createTeacher = async (req, res) => {
 
   try {
     const {
-      firstName,
-      lastName,
-      email,
-      phone,
-      departmentId,
-      qualification,
-      hireDate,
-      username,
-      password,
-      subjectId,
-      homeroomClassId
+      firstName, lastName, email, phone, departmentId,
+      qualification, hireDate, username, password, subjectId, homeroomClassId
     } = req.body;
 
     const assignedClassIds = normalizeAssignedClassIds(req.body);
 
-    if (!username || !password) {
-      throw createHttpError('Username and password are required');
-    }
-
-    if (!subjectId) {
-      throw createHttpError('A teacher must be assigned exactly one subject');
-    }
-
+    if (!username || !password) throw createHttpError('Username and password are required');
+    if (!subjectId) throw createHttpError('A teacher must be assigned exactly one subject');
     if (homeroomClassId && !assignedClassIds.includes(Number(homeroomClassId))) {
       throw createHttpError('Homeroom class must also be one of the assigned teaching classes');
     }
@@ -265,45 +238,33 @@ export const createTeacher = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const [userResult] = await connection.query(
-      'INSERT INTO users (username, password, role) VALUES (?, ?, ?)',
+      'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
       [normalizedUsername, hashedPassword, 'teacher']
     );
 
-    const userId = userResult.insertId;
+    const userId = userResult[0].id;
 
     const [teacherResult] = await connection.query(
       `INSERT INTO teachers
        (user_id, first_name, last_name, email, phone, department_id, qualification, hire_date)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
       [userId, firstName, lastName, email, phone, normalizedDepartmentId, qualification || null, hireDate || null]
     );
 
-    const teacherId = teacherResult.insertId;
+    const teacherId = teacherResult[0].id;
 
     await syncTeacherAssignments(
-      connection,
-      teacherId,
-      normalizedSubjectId,
-      assignedClassIds,
+      connection, teacherId, normalizedSubjectId, assignedClassIds,
       homeroomClassId ? Number(homeroomClassId) : null
     );
 
     await connection.commit();
-
-    res.status(201).json({
-      message: 'Teacher created successfully',
-      teacherId
-    });
+    res.status(201).json({ message: 'Teacher created successfully', teacherId });
   } catch (error) {
     await connection.rollback();
     console.error('Error creating teacher:', error);
-    const statusCode = error.statusCode || (error.code === 'ER_DUP_ENTRY' ? 400 : 500);
-    const message = error.statusCode
-      ? error.message
-      : error.code === 'ER_DUP_ENTRY'
-        ? 'Username already exists'
-        : error.message || 'Failed to create teacher';
-    res.status(statusCode).json({ error: message });
+    const statusCode = error.statusCode || 500;
+    res.status(statusCode).json({ error: error.message || 'Failed to create teacher' });
   } finally {
     connection.release();
   }
@@ -329,6 +290,7 @@ export const updateTeacher = async (req, res) => {
 
     const fields = [];
     const values = [];
+    let paramIndex = 1;
 
     let normalizedDepartmentId;
     if (updates.departmentId !== undefined) {
@@ -337,19 +299,16 @@ export const updateTeacher = async (req, res) => {
 
     Object.entries(fieldMap).forEach(([key, dbField]) => {
       if (updates[key] !== undefined) {
-        fields.push(`${dbField} = ?`);
-        if (key === 'departmentId') {
-          values.push(normalizedDepartmentId);
-        } else {
-          values.push(updates[key] || null);
-        }
+        fields.push(`${dbField} = $${paramIndex}`);
+        values.push(key === 'departmentId' ? normalizedDepartmentId : (updates[key] || null));
+        paramIndex++;
       }
     });
 
     if (fields.length > 0) {
       values.push(id);
       await connection.query(
-        `UPDATE teachers SET ${fields.join(', ')} WHERE id = ?`,
+        `UPDATE teachers SET ${fields.join(', ')} WHERE id = $${paramIndex}`,
         values
       );
     }
@@ -363,43 +322,35 @@ export const updateTeacher = async (req, res) => {
       hasHomeroomClassUpdate
     ) {
       const [existingAssignments] = await connection.query(
-        'SELECT subject_id, class_id FROM teacher_subjects WHERE teacher_id = ? ORDER BY class_id',
+        'SELECT subject_id, class_id FROM teacher_subjects WHERE teacher_id = $1 ORDER BY class_id',
         [id]
       );
       const [existingHomeroom] = await connection.query(
-        'SELECT id FROM classes WHERE homeroom_teacher_id = ? LIMIT 1',
+        'SELECT id FROM classes WHERE homeroom_teacher_id = $1 LIMIT 1',
         [id]
       );
 
       const subjectId = updates.subjectId ?? existingAssignments[0]?.subject_id;
       const assignedClassIds = updates.assignedClassIds !== undefined || updates.assignedClassId !== undefined
         ? normalizeAssignedClassIds(updates)
-        : existingAssignments.map((assignment) => Number(assignment.class_id));
+        : existingAssignments.map((a) => Number(a.class_id));
       const homeroomClassId = hasHomeroomClassUpdate
         ? (updates.homeroomClassId ? Number(updates.homeroomClassId) : null)
         : (existingHomeroom[0]?.id ?? null);
 
-      if (!subjectId) {
-        throw createHttpError('Teacher assignment requires one subject');
-      }
-
+      if (!subjectId) throw createHttpError('Teacher assignment requires one subject');
       if (homeroomClassId && !assignedClassIds.includes(Number(homeroomClassId))) {
         throw createHttpError('Homeroom class must also be one of the assigned teaching classes');
       }
 
       const normalizedSubjectId = await ensureSubjectExists(connection, subjectId);
-
       await syncTeacherAssignments(
-        connection,
-        Number(id),
-        normalizedSubjectId,
-        assignedClassIds,
+        connection, Number(id), normalizedSubjectId, assignedClassIds,
         homeroomClassId ? Number(homeroomClassId) : null
       );
     }
 
     await connection.commit();
-
     res.json({ message: 'Teacher updated successfully' });
   } catch (error) {
     await connection.rollback();
@@ -413,12 +364,7 @@ export const updateTeacher = async (req, res) => {
 export const deleteTeacher = async (req, res) => {
   try {
     const { id } = req.params;
-
-    await pool.query(
-      'UPDATE teachers SET is_active = FALSE WHERE id = ?',
-      [id]
-    );
-
+    await pool.query('UPDATE teachers SET is_active = FALSE WHERE id = $1', [id]);
     res.json({ message: 'Teacher deleted successfully' });
   } catch (error) {
     console.error('Error deleting teacher:', error);
@@ -439,7 +385,7 @@ export const generateCredentials = async (req, res) => {
       `SELECT t.user_id, t.first_name, t.last_name, u.username
        FROM teachers t
        LEFT JOIN users u ON t.user_id = u.id
-       WHERE t.id = ?`,
+       WHERE t.id = $1`,
       [id]
     );
 
@@ -471,7 +417,7 @@ export const generateCredentials = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     await connection.query(
-      'UPDATE users SET username = ?, password = ? WHERE id = ?',
+      'UPDATE users SET username = $1, password = $2 WHERE id = $3',
       [username, hashedPassword, teacher.user_id]
     );
 

@@ -3,8 +3,8 @@ import { AlertCircle } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext.jsx';
 import { useData } from '../contexts/DataContext.jsx';
 import { AdminDashboard } from '../components/dashboards/AdminDashboard.jsx';
-import { TeacherDashboard } from '../components/dashboards/TeacherDashboard.jsx';
 import { StudentDashboard } from '../components/dashboards/StudentDashboard.jsx';
+import { TeacherDashboard } from '../components/dashboards/TeacherDashboard.jsx';
 import { Alert, AlertDescription, AlertTitle } from '../components/ui/alert.jsx';
 
 export function DashboardPage() {

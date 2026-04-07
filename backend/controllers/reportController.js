@@ -42,7 +42,7 @@ export const getStudentReport = async (req, res) => {
       FROM students s
       LEFT JOIN classes c ON s.class_id = c.id
       LEFT JOIN academic_years ay ON c.academic_year_id = ay.id
-      WHERE s.id = ?
+      WHERE s.id = $1
     `, [id]);
 
     if (students.length === 0) {
@@ -53,7 +53,7 @@ export const getStudentReport = async (req, res) => {
 
     if (req.user.role === 'teacher' && req.user.teacherId) {
       const [assignments] = await pool.query(
-        'SELECT id FROM teacher_subjects WHERE teacher_id = ? AND class_id = ? LIMIT 1',
+        'SELECT id FROM teacher_subjects WHERE teacher_id = $1 AND class_id = $2 LIMIT 1',
         [req.user.teacherId, student.class_id]
       );
       const allowed = student.class_id ? assignments.length > 0 : false;
@@ -84,24 +84,22 @@ export const getStudentReport = async (req, res) => {
       FROM marks m
       JOIN subjects sub ON m.subject_id = sub.id
       JOIN exam_types et ON m.exam_type_id = et.id
-      WHERE m.student_id = ?
+      WHERE m.student_id = $1
     `;
 
     const params = [id];
 
     if (academicYearId) {
-      marksQuery += ' AND m.academic_year_id = ?';
+      marksQuery += ' AND m.academic_year_id = $2';
       params.push(academicYearId);
     }
 
     if (req.user.role === 'teacher' && req.user.teacherId) {
+      const i = params.length + 1;
       marksQuery += `
         AND EXISTS (
-          SELECT 1
-          FROM teacher_subjects ts
-          WHERE ts.teacher_id = ?
-            AND ts.class_id = m.class_id
-            AND ts.subject_id = m.subject_id
+          SELECT 1 FROM teacher_subjects ts
+          WHERE ts.teacher_id = $${i} AND ts.class_id = m.class_id AND ts.subject_id = m.subject_id
         )
       `;
       params.push(req.user.teacherId);
@@ -178,7 +176,7 @@ export const getClassReport = async (req, res) => {
       FROM classes c
       LEFT JOIN teachers t ON c.homeroom_teacher_id = t.id
       LEFT JOIN academic_years ay ON c.academic_year_id = ay.id
-      WHERE c.id = ?
+      WHERE c.id = $1
     `, [classId]);
 
     if (classes.length === 0) {
@@ -206,25 +204,23 @@ export const getClassReport = async (req, res) => {
         END AS average_percentage
       FROM students s
       LEFT JOIN marks m ON s.id = m.student_id
-      WHERE s.class_id = ?
+      WHERE s.class_id = $1
     `;
 
     const params = [classId];
 
     if (academicYearId) {
-      studentsQuery += ' AND (m.academic_year_id = ? OR m.id IS NULL)';
+      studentsQuery += ' AND (m.academic_year_id = $2 OR m.id IS NULL)';
       params.push(academicYearId);
     }
 
     if (req.user.role === 'teacher' && req.user.teacherId) {
+      const i = params.length + 1;
       studentsQuery += `
         AND (
           m.id IS NULL OR EXISTS (
-            SELECT 1
-            FROM teacher_subjects ts
-            WHERE ts.teacher_id = ?
-              AND ts.class_id = s.class_id
-              AND ts.subject_id = m.subject_id
+            SELECT 1 FROM teacher_subjects ts
+            WHERE ts.teacher_id = $${i} AND ts.class_id = s.class_id AND ts.subject_id = m.subject_id
           )
         )
       `;
@@ -242,13 +238,13 @@ export const getClassReport = async (req, res) => {
       FROM marks m
       JOIN subjects sub ON m.subject_id = sub.id
       JOIN exam_types et ON m.exam_type_id = et.id
-      WHERE m.class_id = ?
+      WHERE m.class_id = $1
     `;
 
     const marksParams = [classId];
 
     if (academicYearId) {
-      marksQuery += ' AND m.academic_year_id = ?';
+      marksQuery += ' AND m.academic_year_id = $2';
       marksParams.push(academicYearId);
     }
 
