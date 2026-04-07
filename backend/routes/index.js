@@ -56,6 +56,11 @@ import {
   getExamTypes,
   getAcademicYears
 } from '../controllers/referenceController.js';
+import {
+  unlockAccount,
+  getLockedAccounts,
+  getLoginAttempts
+} from '../controllers/adminController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { checkTeacherSubjectAccess, checkHomeroomAccess } from '../middleware/teacherAccess.js';
 
@@ -139,5 +144,10 @@ router.delete('/classes/:id', authenticate, authorize('admin'), deleteClass);
 router.get('/departments', authenticate, getDepartments);
 router.get('/exam-types', authenticate, getExamTypes);
 router.get('/academic-years', authenticate, getAcademicYears);
+
+// Admin security routes
+router.get('/admin/locked-accounts', authenticate, authorize('admin'), getLockedAccounts);
+router.post('/admin/unlock-account/:username', authenticate, authorize('admin'), unlockAccount);
+router.get('/admin/login-attempts/:username', authenticate, authorize('admin'), getLoginAttempts);
 
 export default router;

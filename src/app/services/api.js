@@ -23,6 +23,12 @@ class ApiService {
   async request(endpoint, options = {}) {
     const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
     const url = `${API_URL}${normalizedEndpoint}`;
+    
+    // Update activity timestamp on every API request
+    if (auth.isLoggedIn()) {
+      auth.updateActivity();
+    }
+    
     const config = {
       ...options,
       headers: {
@@ -64,12 +70,35 @@ class ApiService {
 
   // Auth
   async login(username, password) {
-    const data = await this.request('/auth/login', {
-      method: 'POST',
-      body: JSON.stringify({ username, password }),
-    });
-
-    return data;
+    try {
+      const data = await this.request('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password }),
+      });
+      return data;
+    } catch (error) {
+      // Preserve error data for login attempts tracking
+      if (error instanceof ApiError && error.status === 403) {
+        const enhancedError = new Error(error.message);
+        enhancedError.response = { data: { locked: true, error: error.message } };
+        throw enhancedError;
+      }
+      if (error instanceof ApiError && error.status === 401) {
+        // Try to parse the error message for attempts info
+        const enhancedError = new Error(error.message);
+        const attemptsMatch = error.message.match(/(\d+) attempt/);
+        if (attemptsMatch) {
+          enhancedError.response = { 
+            data: { 
+              error: error.message,
+              attemptsLeft: parseInt(attemptsMatch[1], 10)
+            } 
+          };
+        }
+        throw enhancedError;
+      }
+      throw error;
+    }
   }
 
   async register(userData) {

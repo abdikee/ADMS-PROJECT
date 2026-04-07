@@ -311,6 +311,64 @@ export function ReportsPage() {
       const usableWidth = pageWidth - (margin * 2);
       const usableHeight = pageHeight - (margin * 2);
 
+      // Replace oklch() CSS variable values with hex equivalents so html2canvas
+      // (and jsPDF) can parse them — oklch is not supported by either library.
+      const oklchToHex = {
+        'oklch(0.145 0 0)': '#1a1a1a',
+        'oklch(0.985 0 0)': '#fbfbfb',
+        'oklch(1 0 0)': '#ffffff',
+        'oklch(0.205 0 0)': '#2e2e2e',
+        'oklch(0.269 0 0)': '#3d3d3d',
+        'oklch(0.708 0 0)': '#a3a3a3',
+        'oklch(0.922 0 0)': '#e5e5e5',
+        'oklch(0.97 0 0)': '#f7f7f7',
+        'oklch(0.95 0.0058 264.53)': '#f1f1f7',
+        'oklch(0.396 0.141 25.723)': '#7f1d1d',
+        'oklch(0.637 0.237 25.331)': '#ef4444',
+        'oklch(0.646 0.222 41.116)': '#f97316',
+        'oklch(0.6 0.118 184.704)': '#14b8a6',
+        'oklch(0.398 0.07 227.392)': '#1e40af',
+        'oklch(0.828 0.189 84.429)': '#eab308',
+        'oklch(0.769 0.188 70.08)': '#f59e0b',
+        'oklch(0.488 0.243 264.376)': '#3b82f6',
+        'oklch(0.696 0.17 162.48)': '#10b981',
+        'oklch(0.627 0.265 303.9)': '#a855f7',
+        'oklch(0.645 0.246 16.439)': '#ef4444',
+      };
+
+      function resolveOklch(doc) {
+        doc.querySelectorAll('*').forEach((el) => {
+          const style = el.getAttribute('style') || '';
+          if (style.includes('oklch')) {
+            let resolved = style;
+            Object.entries(oklchToHex).forEach(([oklch, hex]) => {
+              resolved = resolved.replaceAll(oklch, hex);
+            });
+            el.setAttribute('style', resolved);
+          }
+          // Also patch computed CSS variables on :root
+          const computed = window.getComputedStyle(el);
+          ['color', 'background-color', 'border-color', 'outline-color'].forEach((prop) => {
+            const val = computed.getPropertyValue(prop);
+            if (val && val.includes('oklch')) {
+              Object.entries(oklchToHex).forEach(([oklch, hex]) => {
+                if (val.includes(oklch)) el.style[prop] = hex;
+              });
+            }
+          });
+        });
+        // Patch CSS custom properties on :root
+        const root = doc.documentElement;
+        Object.entries(oklchToHex).forEach(([oklch, hex]) => {
+          const allProps = Array.from(root.style);
+          allProps.forEach((prop) => {
+            if (root.style.getPropertyValue(prop).includes(oklch)) {
+              root.style.setProperty(prop, hex);
+            }
+          });
+        });
+      }
+
       for (let index = 0; index < reportCardElements.length; index += 1) {
         const element = reportCardElements[index];
         const canvas = await html2canvas(element, {
@@ -322,6 +380,35 @@ export function ReportsPage() {
           scrollY: 0,
           width: element.scrollWidth,
           height: element.scrollHeight,
+          onclone: (clonedDoc) => {
+            // Inject a style override that replaces all oklch vars with safe hex values
+            const style = clonedDoc.createElement('style');
+            style.textContent = `
+              :root {
+                --foreground: #1a1a1a !important;
+                --card-foreground: #1a1a1a !important;
+                --popover: #ffffff !important;
+                --popover-foreground: #1a1a1a !important;
+                --primary-foreground: #ffffff !important;
+                --secondary: #f1f1f7 !important;
+                --ring: #a3a3a3 !important;
+                --chart-1: #f97316 !important;
+                --chart-2: #14b8a6 !important;
+                --chart-3: #1e40af !important;
+                --chart-4: #eab308 !important;
+                --chart-5: #f59e0b !important;
+                --sidebar: #fbfbfb !important;
+                --sidebar-foreground: #1a1a1a !important;
+                --sidebar-primary-foreground: #fbfbfb !important;
+                --sidebar-accent: #f7f7f7 !important;
+                --sidebar-accent-foreground: #2e2e2e !important;
+                --sidebar-border: #e5e5e5 !important;
+                --sidebar-ring: #a3a3a3 !important;
+              }
+            `;
+            clonedDoc.head.appendChild(style);
+            resolveOklch(clonedDoc);
+          },
         });
 
         const imageData = canvas.toDataURL('image/png');

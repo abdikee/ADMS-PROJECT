@@ -2,13 +2,26 @@ import pool from '../config/database.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { env } from '../config/env.js';
+import loginAttemptsMiddleware from '../middleware/loginAttempts.js';
 
 export const login = async (req, res) => {
   try {
     const { username, password } = req.body;
+    const ipAddress = req.ip || req.connection.remoteAddress;
 
     if (!username || !password) {
       return res.status(400).json({ error: 'Username and password required' });
+    }
+
+    // Check if account is locked
+    const lockStatus = await loginAttemptsMiddleware.checkAccountLock(username);
+    if (lockStatus.locked) {
+      return res.status(403).json({ 
+        error: lockStatus.message,
+        locked: true,
+        permanent: lockStatus.permanent || false,
+        expiresAt: lockStatus.expiresAt || null
+      });
     }
 
     const [users] = await pool.query(
@@ -17,7 +30,13 @@ export const login = async (req, res) => {
     );
 
     if (users.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Record failed attempt even for non-existent users to prevent enumeration
+      const failResult = await loginAttemptsMiddleware.recordFailedAttempt(username, ipAddress);
+      return res.status(401).json({ 
+        error: failResult.message || 'Invalid credentials',
+        locked: failResult.locked || false,
+        attemptsLeft: failResult.attemptsLeft
+      });
     }
 
     const user = users[0];
@@ -33,7 +52,22 @@ export const login = async (req, res) => {
 
     const isValidPassword = await bcrypt.compare(password, user.password);
     if (!isValidPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      // Record failed attempt
+      const failResult = await loginAttemptsMiddleware.recordFailedAttempt(username, ipAddress);
+      
+      if (failResult.locked) {
+        return res.status(403).json({ 
+          error: failResult.message,
+          locked: true,
+          permanent: failResult.permanent || false,
+          expiresAt: failResult.expiresAt || null
+        });
+      }
+      
+      return res.status(401).json({ 
+        error: failResult.message || 'Invalid credentials',
+        attemptsLeft: failResult.attemptsLeft
+      });
     }
 
     let userData = { id: user.id, username: user.username, role: user.role };
@@ -66,8 +100,11 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, username: user.username, role: user.role, ...userData },
       env.JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '15m' } // Token expires in 15 minutes
     );
+
+    // Record successful login
+    await loginAttemptsMiddleware.recordSuccessfulLogin(username, ipAddress);
 
     await pool.query(
       'UPDATE users SET last_login = NOW() WHERE id = $1',

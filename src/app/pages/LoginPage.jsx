@@ -12,6 +12,8 @@ export function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
+  const [accountLocked, setAccountLocked] = useState(false);
+  const [attemptsLeft, setAttemptsLeft] = useState(null);
 
   React.useEffect(() => {
     if (user) navigate('/');
@@ -27,6 +29,8 @@ export function LoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setAccountLocked(false);
+    setAttemptsLeft(null);
 
     const errors = validate();
     if (Object.keys(errors).length > 0) {
@@ -40,7 +44,18 @@ export function LoginPage() {
       await login(username.trim(), password);
       navigate('/');
     } catch (err) {
-      setError(err.message || 'Invalid username or password. Please try again.');
+      // Parse error response for lock information
+      const errorData = err.response?.data || {};
+      
+      if (errorData.locked) {
+        setAccountLocked(true);
+        setError(errorData.error || err.message);
+      } else {
+        setError(err.message || 'Invalid username or password. Please try again.');
+        if (errorData.attemptsLeft !== undefined) {
+          setAttemptsLeft(errorData.attemptsLeft);
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -50,7 +65,11 @@ export function LoginPage() {
     if (field === 'username') setUsername(value);
     else setPassword(value);
     if (fieldErrors[field]) setFieldErrors((prev) => ({ ...prev, [field]: '' }));
-    if (error) setError('');
+    if (error) {
+      setError('');
+      setAccountLocked(false);
+      setAttemptsLeft(null);
+    }
   };
 
   return (
@@ -79,9 +98,20 @@ export function LoginPage() {
           <form onSubmit={handleSubmit} noValidate className="px-8 pt-5 pb-8 space-y-5">
             {/* Global error */}
             {error && (
-              <div role="alert" className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm">
+              <div role="alert" className={`flex items-start gap-2 border rounded-lg px-4 py-3 text-sm ${
+                accountLocked 
+                  ? 'bg-orange-50 border-orange-200 text-orange-800' 
+                  : 'bg-red-50 border-red-200 text-red-700'
+              }`}>
                 <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                <span>{error}</span>
+                <div className="flex-1">
+                  <span>{error}</span>
+                  {!accountLocked && attemptsLeft !== null && attemptsLeft > 0 && (
+                    <p className="mt-1 text-xs font-medium">
+                      {attemptsLeft} attempt{attemptsLeft > 1 ? 's' : ''} remaining before account lock.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
 

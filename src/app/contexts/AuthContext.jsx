@@ -36,6 +36,12 @@ export function AuthProvider({ children }) {
         const savedUser = auth.getUser();
 
         if (savedUser && auth.getToken()) {
+          // Check for inactivity timeout
+          if (auth.checkInactivity()) {
+            setUser(null);
+            setIsLoading(false);
+            return;
+          }
           persistUser(savedUser);
         } else {
           auth.clearSession();
@@ -60,6 +66,36 @@ export function AuthProvider({ children }) {
     window.addEventListener(auth.unauthorizedEvent, handleUnauthorized);
     return () => window.removeEventListener(auth.unauthorizedEvent, handleUnauthorized);
   }, []);
+
+  // Track user activity and check for inactivity
+  useEffect(() => {
+    if (!user) return;
+
+    const activityEvents = ['mousedown', 'keydown', 'scroll', 'touchstart', 'click'];
+    
+    const handleActivity = () => {
+      auth.updateActivity();
+    };
+
+    // Check inactivity every minute
+    const inactivityCheckInterval = setInterval(() => {
+      if (auth.checkInactivity()) {
+        setUser(null);
+      }
+    }, 60000); // Check every 60 seconds
+
+    // Listen to user activity
+    activityEvents.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+
+    return () => {
+      clearInterval(inactivityCheckInterval);
+      activityEvents.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+    };
+  }, [user]);
 
   const login = async (username, password) => {
     try {
