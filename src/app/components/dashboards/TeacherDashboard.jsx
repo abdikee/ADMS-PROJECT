@@ -1,6 +1,6 @@
 ﻿import React, { useMemo } from 'react';
-import { useAuth } from '../contexts/AuthContext.jsx';
-import { useData } from '../contexts/DataContext.jsx';
+import { useAuth } from '../../contexts/AuthContext.jsx';
+import { useData } from '../../contexts/DataContext.jsx';
 import { getTeacherAssignedClassIds } from '../../utils/teacherAssignments.js';
 import { DashboardHeader } from './DashboardHeader.jsx';
 import { Skeleton } from '../ui/skeleton.jsx';
@@ -82,8 +82,8 @@ export function TeacherDashboard() {
     <div className="space-y-6">
       <DashboardHeader
         eyebrow="Teacher Portal"
-        title={Welcome, }
-        description={${assignedSubject?.name ?? 'No subject'} ·  class(es)}
+        title={`Welcome, ${user?.name ?? 'Teacher'}`}
+        description={`${assignedSubject?.name ?? 'No subject'} · ${assignedClasses?.length ?? 0} class(es)`}
       />
 
       <Tabs defaultValue="overview">

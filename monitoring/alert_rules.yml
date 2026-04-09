@@ -1,0 +1,177 @@
+# Prometheus Alert Rules for SAMS Application
+groups:
+  - name: sams_application_alerts
+    rules:
+      # High Error Rate
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for the last 5 minutes"
+
+      # High Response Time
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is {{ $value }}s"
+
+      # Service Down
+      - alert: ServiceDown
+        expr: up{job="sams-app"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "SAMS application is down"
+          description: "SAMS application has been down for more than 1 minute"
+
+      # High Memory Usage
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # High CPU Usage
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}%"
+
+      # Database Connection Issues
+      - alert: DatabaseConnectionIssues
+        expr: pg_stat_activity_count > 80
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High database connections"
+          description: "Database has {{ $value }} active connections"
+
+      # Redis Memory Usage
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }}"
+
+      # Disk Space Low
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space is {{ $value }}% available"
+
+      # Security Events
+      - alert: SecurityEvents
+        expr: rate(security_events_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Security events detected"
+          description: "Security event rate is {{ $value }} per second"
+
+      # Failed Login Attempts
+      - alert: FailedLoginAttempts
+        expr: rate(login_attempts_total{status="failed"}[5m]) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High failed login attempts"
+          description: "Failed login rate is {{ $value }} per second"
+
+      # Rate Limit Exceeded
+      - alert: RateLimitExceeded
+        expr: rate(rate_limit_exceeded_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Rate limit exceeded"
+          description: "Rate limit exceeded {{ $value }} times per second"
+
+  - name: sams_business_alerts
+    rules:
+      # No Active Users
+      - alert: NoActiveUsers
+        expr: active_users_total == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No active users"
+          description: "No active users detected for 10 minutes"
+
+      # Low Student Activity
+      - alert: LowStudentActivity
+        expr: rate(student_actions_total[1h]) < 0.1
+        for: 30m
+        labels:
+          severity: info
+        annotations:
+          summary: "Low student activity"
+          description: "Student activity rate is {{ $value }} actions per hour"
+
+      # Database Backup Failed
+      - alert: DatabaseBackupFailed
+        expr: database_backup_success == 0
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "Database backup failed"
+          description: "Database backup has not succeeded in the last hour"
+
+  - name: sams_infrastructure_alerts
+    rules:
+      # Container Down
+      - alert: ContainerDown
+        expr: container_state_running == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Container is down"
+          description: "Container {{ $labels.name }} is down"
+
+      # Docker High Memory Usage
+      - alert: DockerHighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Container high memory usage"
+          description: "Container {{ $labels.name }} memory usage is {{ $value }}%"
+
+      # Network Latency High
+      - alert: NetworkLatencyHigh
+        expr: probe_success == 0
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Network latency high"
+          description: "Network probe to {{ $labels.instance }} failed"

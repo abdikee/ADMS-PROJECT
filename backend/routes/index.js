@@ -61,6 +61,7 @@ import {
   getLockedAccounts,
   getLoginAttempts
 } from '../controllers/adminController.js';
+import gdprController from '../controllers/gdprController.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { checkTeacherSubjectAccess, checkHomeroomAccess } from '../middleware/teacherAccess.js';
 
@@ -149,5 +150,13 @@ router.get('/academic-years', authenticate, getAcademicYears);
 router.get('/admin/locked-accounts', authenticate, authorize('admin'), getLockedAccounts);
 router.post('/admin/unlock-account/:username', authenticate, authorize('admin'), unlockAccount);
 router.get('/admin/login-attempts/:username', authenticate, authorize('admin'), getLoginAttempts);
+
+// GDPR compliance routes
+router.get('/gdpr/data-summary', authenticate, gdprController.getUserDataSummary);
+router.get('/gdpr/export', authenticate, gdprController.exportUserData);
+router.post('/gdpr/delete', authenticate, gdprController.deleteUserData);
+router.get('/gdpr/consent', authenticate, gdprController.getConsent);
+router.post('/gdpr/consent', authenticate, gdprController.updateConsent);
+router.get('/gdpr/processing-records', authenticate, gdprController.getDataProcessingRecords);
 
 export default router;

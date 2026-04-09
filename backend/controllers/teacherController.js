@@ -410,7 +410,7 @@ export const generateCredentials = async (req, res) => {
 
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
     let password = '';
-    for (let i = 0; i < 8; i += 1) {
+    for (let i = 0; i < 12; i += 1) {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
 

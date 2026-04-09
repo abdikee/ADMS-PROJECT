@@ -104,7 +104,7 @@ class PostgresPoolAdapter {
   constructor() {
     this.pool = new Pool({
       connectionString: env.DATABASE_URL,
-      ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+      ssl: env.NODE_ENV === 'production' ? { rejectUnauthorized: true } : false,
     });
   }
 

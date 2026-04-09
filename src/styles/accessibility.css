@@ -1,0 +1,576 @@
+/* Accessibility Styles */
+
+/* High Contrast Mode */
+.high-contrast {
+  --color-primary-500: #000000;
+  --color-primary-600: #000000;
+  --color-secondary-500: #000000;
+  --color-secondary-600: #000000;
+  --color-success-500: #000000;
+  --color-warning-500: #000000;
+  --color-error-500: #000000;
+  --color-accent-500: #000000;
+  
+  --color-gray-50: #ffffff;
+  --color-gray-100: #ffffff;
+  --color-gray-200: #e0e0e0;
+  --color-gray-300: #c0c0c0;
+  --color-gray-400: #808080;
+  --color-gray-500: #000000;
+  --color-gray-600: #000000;
+  --color-gray-700: #000000;
+  --color-gray-800: #000000;
+  --color-gray-900: #000000;
+  
+  --color-white: #ffffff;
+  --color-black: #000000;
+}
+
+.high-contrast * {
+  border-color: #000000 !important;
+  box-shadow: none !important;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-ceptor select,
+.high-contrast textarea {
+  border: 2px solid #000000 !important;
+}
+
+.high-contrast a {
+  text-decoration: underline;
+}
+
+.high-contrast img {
+  filter: grayscale(100%) contrast(120%);
+}
+
+/* Large Text Mode */
+.large-text {
+  font-size: 120%;
+}
+
+.large-text * {
+  font-size: inherit;
+}
+
+/* Reduced Motion */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Screen Reader Mode */
+.screen-reader-mode .sr-only-focusable:focus,
+.screen-reader-mode *:focus {
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+}
+
+.screen-reader-mode button:hover,
+.screen-reader-mode a:hover {
+  background-color: transparent;
+  color: inherit;
+}
+
+/* Focus Visible */
+.focus-visible :focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+.focus-visible *:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* Color Blindness Simulations */
+.sim-protanopia {
+  filter: url(#protanopia-filter);
+}
+
+.sim-deuteranopia {
+  filter: url(#deuteranopia-filter);
+}
+
+.sim-tritanopia {
+  filter: url(#tritanopia-filter);
+}
+
+.sim-achromatopsia {
+  filter: grayscale(100%);
+}
+
+/* Skip Links */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 6px;
+  background: #3b82f6;
+  color: white;
+  padding: 8px;
+  text-decoration: none;
+  border-radius: 4px;
+  z-index: 1000;
+}
+
+.skip-link:focus {
+  top: 6px;
+}
+
+/* ARIA Live Regions */
+.aria-live-polite {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+.aria-live-assertive {
+  position: absolute;
+  left: -10000px;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+
+/* Keyboard Navigation */
+.keyboard-nav *:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* High Contrast Focus Indicators */
+.high-contrast *:focus {
+  outline: 3px solid #000000;
+  outline-offset: 2px;
+}
+
+/* Accessible Tables */
+.accessible-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.accessible-table th,
+.accessible-table td {
+  border: 1px solid #000000;
+  padding: 8px;
+  text-align: left;
+}
+
+.accessible-table th {
+  background-color: #f3f4f6;
+  font-weight: bold;
+}
+
+/* Accessible Form Elements */
+.accessible-form input,
+.accessible-form select,
+.accessible-form textarea {
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-size: 16px; /* Prevents zoom on iOS */
+}
+
+.accessible-form input:focus,
+.accessible-form select:focus,
+.accessible-form textarea:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-color: #3b82f6;
+}
+
+.accessible-form label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.accessible-form .required {
+  color: #dc2626;
+}
+
+/* Accessible Buttons */
+.accessible-button {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 8px 16px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background-color: #ffffff;
+  color: #1f2937;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.accessible-button:hover {
+  background-color: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.accessible-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-color: #3b82f6;
+}
+
+.accessible-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Accessible Links */
+.accessible-link {
+  color: #3b82f6;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+.accessible-link:hover {
+  color: #1d4ed8;
+  text-decoration-thickness: 2px;
+}
+
+.accessible-link:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Accessible Images */
+.accessible-image {
+  max-width: 100%;
+  height: auto;
+}
+
+.accessible-image[alt=""] {
+  display: none;
+}
+
+/* Accessible Videos */
+.accessible-video {
+  position: relative;
+}
+
+.accessible-video::before {
+  content: "Video: " attr(aria-label);
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* Accessible Modals */
+.accessible-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.accessible-modal-content {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  outline: 2px solid #3b82f6;
+}
+
+/* Accessible Tooltips */
+.accessible-tooltip {
+  position: relative;
+}
+
+.accessible-tooltip::before {
+  content: attr(aria-label);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.accessible-tooltip:hover::before,
+.accessible-tooltip:focus::before {
+  opacity: 1;
+}
+
+/* Accessible Progress Bars */
+.accessible-progress {
+  position: relative;
+  background: #e5e7eb;
+  border-radius: 4px;
+  height: 20px;
+  overflow: hidden;
+}
+
+.accessible-progress-bar {
+  background: #3b82f6;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.accessible-progress::before {
+  content: attr(aria-valuenow) "%";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #1f2937;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+/* Accessible Sliders */
+.accessible-slider {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  display: flex;
+  align-items: center;
+}
+
+.accessible-slider input[type="range"] {
+  width: 100%;
+  height: 6px;
+  background: #e5e7eb;
+  border-radius: 3px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.accessible-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.accessible-slider input[type="range"]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: #3b82f6;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Accessible Tabs */
+.accessible-tabs {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.accessible-tab-list {
+  display: flex;
+  border-bottom: 1px solid #d1d5db;
+}
+
+.accessible-tab {
+  padding: 12px 16px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-weight: 500;
+  color: #6b7280;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.accessible-tab:hover {
+  color: #1f2937;
+  background: #f9fafb;
+}
+
+.accessible-tab:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+.accessible-tab[aria-selected="true"] {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+/* Accessible Accordions */
+.accessible-accordion {
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+
+.accessible-accordion-button {
+  width: 100%;
+  padding: 16px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-weight: 500;
+  cursor: pointer;
+  border-bottom: 1px solid #d1d5db;
+  transition: all 0.2s ease;
+}
+
+.accessible-accordion-button:hover {
+  background: #f9fafb;
+}
+
+.accessible-accordion-button:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: -2px;
+}
+
+.accessible-accordion-button[aria-expanded="true"] {
+  border-bottom-color: transparent;
+}
+
+.accessible-accordion-content {
+  padding: 16px;
+  border-top: 1px solid #d1d5db;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+  }
+  
+  a {
+    text-decoration: underline !important;
+  }
+  
+  img {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}
+
+/* Responsive Typography */
+@media (max-width: 640px) {
+  .responsive-text {
+    font-size: 14px;
+  }
+  
+  .responsive-heading {
+    font-size: 18px;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  .responsive-text {
+    font-size: 15px;
+  }
+  
+  .responsive-heading {
+    font-size: 20px;
+  }
+}
+
+@media (min-width: 1025px) {
+  .responsive-text {
+    font-size: 16px;
+  }
+  
+  .responsive-heading {
+    font-size: 24px;
+  }
+}
+
+/* Touch Targets for Mobile */
+@media (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px;
+  }
+  
+  .touch-target-small {
+    min-height: 48px;
+    min-width: 48px;
+    padding: 16px;
+  }
+}
+
+/* Dark Mode Accessibility */
+@media (prefers-color-scheme: dark) {
+  .auto-dark {
+    background: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .auto-dark * {
+    color: inherit;
+  }
+  
+  .auto-dark a {
+    color: #60a5fa;
+  }
+  
+  .auto-dark a:hover {
+    color: #93c5fd;
+  }
+}
+
+/* Reduced Data Preferences */
+@media (prefers-reduced-data: reduce) {
+  .data-heavy {
+    display: none;
+  }
+  
+  .data-heavy * {
+    background-image: none !important;
+  }
+}
+
+/* High Resolution Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .high-res {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
