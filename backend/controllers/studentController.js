@@ -86,21 +86,27 @@ export const createStudent = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [userResult] = await connection.query(
+    const userResult = await connection.query(
       'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
       [username, hashedPassword, 'student']
     );
 
-    const userId = userResult[0].id;
+    const userId = userResult[0]?.insertId || userResult[0]?.[0]?.id;
+    if (!userId) {
+      throw new Error('Failed to retrieve user ID after creation');
+    }
 
-    const [studentResult] = await connection.query(
+    const studentResult = await connection.query(
       `INSERT INTO students
        (user_id, first_name, last_name, email, phone, class_id, roll_number, admission_number, date_of_birth, gender)
        VALUES ($1, $2, $3, $4, $5, $6, NULL, NULL, $7, $8) RETURNING id`,
       [userId, firstName, lastName, email, phone, classId, dateOfBirth, gender]
     );
 
-    const studentId = studentResult[0].id;
+    const studentId = studentResult[0]?.insertId || studentResult[0]?.[0]?.id;
+    if (!studentId) {
+      throw new Error('Failed to retrieve student ID after creation');
+    }
     const generatedRollNumber = `R${String(studentId).padStart(6, '0')}`;
     const generatedAdmissionNumber = `ADM${studentId}`;
 

@@ -43,12 +43,16 @@ async function resolveAcademicYearId(connection, payload) {
   if (existingAcademicYears.length > 0) return existingAcademicYears[0].id;
 
   const { startDate, endDate } = buildAcademicYearDates(academicYear, semester);
-  const [insertResult] = await connection.query(
+  const insertResult = await connection.query(
     `INSERT INTO academic_years (year, semester, start_date, end_date, is_active)
      VALUES ($1, $2, $3, $4, FALSE) RETURNING id`,
     [academicYear, semester, startDate, endDate]
   );
-  return insertResult[0].id;
+  const academicYearId = insertResult[0]?.insertId || insertResult[0]?.[0]?.id;
+  if (!academicYearId) {
+    throw new Error('Failed to retrieve academic year ID after creation');
+  }
+  return academicYearId;
 }
 
 function buildClassAccessFilters(req, classAlias = 'c') {
@@ -137,13 +141,18 @@ export const createClass = async (req, res) => {
 
     const academicYearId = await resolveAcademicYearId(connection, req.body);
 
-    const [result] = await connection.query(
+    const result = await connection.query(
       `INSERT INTO classes (name, grade, section, academic_year_id, homeroom_teacher_id, max_students)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [name, grade, section, academicYearId, homeroomTeacherId || null, maxStudents || 40]
     );
 
-    res.status(201).json({ message: 'Class created successfully', classId: result[0].id });
+    const classId = result[0]?.insertId || result[0]?.[0]?.id;
+    if (!classId) {
+      throw new Error('Failed to retrieve class ID after creation');
+    }
+
+    res.status(201).json({ message: 'Class created successfully', classId });
   } catch (error) {
     console.error('Error creating class:', error);
     res.status(400).json({ error: error.message || 'Failed to create class' });

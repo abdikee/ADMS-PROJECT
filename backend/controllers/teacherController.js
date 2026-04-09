@@ -237,21 +237,27 @@ export const createTeacher = async (req, res) => {
     await connection.beginTransaction();
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const [userResult] = await connection.query(
+    const userResult = await connection.query(
       'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
       [normalizedUsername, hashedPassword, 'teacher']
     );
 
-    const userId = userResult[0].id;
+    const userId = userResult[0]?.insertId || userResult[0]?.[0]?.id;
+    if (!userId) {
+      throw new Error('Failed to retrieve user ID after creation');
+    }
 
-    const [teacherResult] = await connection.query(
+    const teacherResult = await connection.query(
       `INSERT INTO teachers
        (user_id, first_name, last_name, email, phone, department_id, qualification, hire_date)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
       [userId, firstName, lastName, email, phone, normalizedDepartmentId, qualification || null, hireDate || null]
     );
 
-    const teacherId = teacherResult[0].id;
+    const teacherId = teacherResult[0]?.insertId || teacherResult[0]?.[0]?.id;
+    if (!teacherId) {
+      throw new Error('Failed to retrieve teacher ID after creation');
+    }
 
     await syncTeacherAssignments(
       connection, teacherId, normalizedSubjectId, assignedClassIds,

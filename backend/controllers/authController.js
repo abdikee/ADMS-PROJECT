@@ -133,12 +133,15 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const [result] = await pool.query(
+    const result = await pool.query(
       'INSERT INTO users (username, password, role) VALUES ($1, $2, $3) RETURNING id',
       [username, hashedPassword, role]
     );
 
-    const userId = result[0].id;
+    const userId = result[0]?.insertId || result[0]?.[0]?.id;
+    if (!userId) {
+      throw new Error('Failed to retrieve user ID after creation');
+    }
 
     if (role === 'student' && firstName && lastName) {
       await pool.query(

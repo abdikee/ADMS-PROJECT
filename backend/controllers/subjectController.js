@@ -60,13 +60,18 @@ export const createSubject = async (req, res) => {
     const departmentResult = await validateDepartmentId(departmentId);
     if (departmentResult?.error) return res.status(400).json({ error: departmentResult.error });
 
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO subjects (name, code, description, max_marks, passing_marks, department_id, credit_hours)
        VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id`,
       [name, code, description, maxMarks, passingMarks, departmentResult?.value ?? null, creditHours]
     );
 
-    res.status(201).json({ message: 'Subject created successfully', subjectId: result[0].id });
+    const subjectId = result[0]?.insertId || result[0]?.[0]?.id;
+    if (!subjectId) {
+      throw new Error('Failed to retrieve subject ID after creation');
+    }
+
+    res.status(201).json({ message: 'Subject created successfully', subjectId });
   } catch (error) {
     console.error('Error creating subject:', error);
     const isDup = error.code === '23505';
